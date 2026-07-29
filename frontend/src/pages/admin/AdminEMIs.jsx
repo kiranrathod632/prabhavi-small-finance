@@ -7,6 +7,7 @@ import { PAYMENT_METHODS } from '../../utils/roles';
 import Badge from '../../components/Badge';
 import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
 import { HiDownload } from 'react-icons/hi';
 
@@ -95,69 +96,136 @@ const AdminEMIs = () => {
 
   const statusOptions = ['', 'pending', 'partial', 'paid', 'overdue'];
 
+  const emiActions = (emi) => (
+    <>
+      {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial') && (
+        <>
+          <button
+            type="button"
+            onClick={() => { setCollectEmi(emi); setPaymentMethod('cash'); setReferenceNumber(''); }}
+            className="btn-success action-chip"
+          >
+            {t('adminEmis.collectBtn')}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPartialEmi(emi); setPartialAmount(''); setPaymentMethod('cash'); }}
+            className="btn-primary action-chip"
+          >
+            {t('adminEmis.partialBtn')}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPenaltyEmi(emi); setPenalty(emi.penalty || 0); }}
+            className="btn-secondary action-chip"
+          >
+            {t('adminEmis.penaltyBtn')}
+          </button>
+        </>
+      )}
+      {emi.status === 'paid' && (
+        <button type="button" onClick={() => handleDownload(emi._id, emi.receiptNumber)} className="text-accent-400 p-1">
+          <HiDownload className="w-4 h-4" />
+        </button>
+      )}
+    </>
+  );
+
   if (loading && !emis.length) return <PageLoader />;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-2">{t('adminEmis.title')}</h1>
-      <p className="text-gray-500 mb-6">{t('adminEmis.subtitle')}</p>
+    <div className="page-stack">
+      <PageHeader title={t('adminEmis.title')} subtitle={t('adminEmis.subtitle')} />
 
-      <select className="input w-40 mb-4" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-        {statusOptions.map((s) => (
-          <option key={s || 'all'} value={s}>{s ? t(`statusLabel.${s}`) : t('ui.allStatus')}</option>
-        ))}
-      </select>
-
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">{t('adminEmis.emiNumber')}</th>
-              <th className="text-left py-3 px-2">{t('table.user')}</th>
-              <th className="text-left py-3 px-2">{t('table.mobile')}</th>
-              <th className="text-left py-3 px-2">{t('adminEmis.loan')}</th>
-              <th className="text-right py-3 px-2">{t('table.amount')}</th>
-              <th className="text-right py-3 px-2">{t('adminEmis.paid')}</th>
-              <th className="text-right py-3 px-2">{t('emi.penalty')}</th>
-              <th className="text-left py-3 px-2">{t('emi.dueDate')}</th>
-              <th className="text-left py-3 px-2">{t('table.status')}</th>
-              <th className="text-right py-3 px-2">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {emis.map((emi) => (
-              <tr key={emi._id} className="border-b dark:border-gray-700/50">
-                <td className="py-3 px-2">{emi.emiNumber}</td>
-                <td className="py-3 px-2">{emi.user?.name}</td>
-                <td className="py-3 px-2">{emi.user?.mobile || '-'}</td>
-                <td className="py-3 px-2">{emi.loan?.loanId}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(emi.amount)}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(emi.paidAmount || 0)}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(emi.penalty)}</td>
-                <td className="py-3 px-2">{formatDate(emi.dueDate)}</td>
-                <td className="py-3 px-2"><Badge status={emi.status} /></td>
-                <td className="py-3 px-2 text-right">
-                  <div className="flex flex-wrap gap-1 justify-end">
-                    {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial') && (
-                      <>
-                        <button onClick={() => { setCollectEmi(emi); setPaymentMethod('cash'); setReferenceNumber(''); }} className="btn-success text-xs py-1 px-2">{t('adminEmis.collectBtn')}</button>
-                        <button onClick={() => { setPartialEmi(emi); setPartialAmount(''); setPaymentMethod('cash'); }} className="btn-primary text-xs py-1 px-2">{t('adminEmis.partialBtn')}</button>
-                        <button onClick={() => { setPenaltyEmi(emi); setPenalty(emi.penalty || 0); }} className="btn-secondary text-xs py-1 px-2">{t('adminEmis.penaltyBtn')}</button>
-                      </>
-                    )}
-                    {emi.status === 'paid' && (
-                      <button onClick={() => handleDownload(emi._id, emi.receiptNumber)} className="text-primary-600 p-1">
-                        <HiDownload className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Pagination meta={meta} onPageChange={setPage} />
+      <div className="filter-bar">
+        <select className="input" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+          {statusOptions.map((s) => (
+            <option key={s || 'all'} value={s}>{s ? t(`statusLabel.${s}`) : t('ui.allStatus')}</option>
+          ))}
+        </select>
       </div>
+
+      <div className="mobile-list">
+        {emis.map((emi) => (
+          <div key={emi._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <p className="mobile-list-title">
+                  {t('adminEmis.emiNumber')} #{emi.emiNumber} · {emi.loan?.loanId}
+                </p>
+                <p className="mobile-list-meta mt-0.5">
+                  {emi.user?.name}
+                  {emi.user?.mobile ? ` · ${emi.user.mobile}` : ''}
+                </p>
+              </div>
+              <Badge status={emi.status} />
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.amount')}</label>
+                <span>{formatCurrency(emi.amount)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('adminEmis.paid')}</label>
+                <span>{formatCurrency(emi.paidAmount || 0)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('emi.penalty')}</label>
+                <span>{formatCurrency(emi.penalty)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('emi.dueDate')}</label>
+                <span>{formatDate(emi.dueDate)}</span>
+              </div>
+            </div>
+            <div className="mobile-list-actions">{emiActions(emi)}</div>
+          </div>
+        ))}
+        {!emis.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
+        )}
+      </div>
+
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('adminEmis.emiNumber')}</th>
+                <th>{t('table.user')}</th>
+                <th>{t('table.mobile')}</th>
+                <th>{t('adminEmis.loan')}</th>
+                <th className="text-right">{t('table.amount')}</th>
+                <th className="text-right">{t('adminEmis.paid')}</th>
+                <th className="text-right">{t('emi.penalty')}</th>
+                <th>{t('emi.dueDate')}</th>
+                <th>{t('table.status')}</th>
+                <th className="text-right">{t('table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {emis.map((emi) => (
+                <tr key={emi._id}>
+                  <td>{emi.emiNumber}</td>
+                  <td>{emi.user?.name}</td>
+                  <td>{emi.user?.mobile || '-'}</td>
+                  <td>{emi.loan?.loanId}</td>
+                  <td className="text-right">{formatCurrency(emi.amount)}</td>
+                  <td className="text-right">{formatCurrency(emi.paidAmount || 0)}</td>
+                  <td className="text-right">{formatCurrency(emi.penalty)}</td>
+                  <td>{formatDate(emi.dueDate)}</td>
+                  <td><Badge status={emi.status} /></td>
+                  <td className="text-right">
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{emiActions(emi)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
 
       <Modal isOpen={!!collectEmi} onClose={() => setCollectEmi(null)} title={t('adminEmis.collectTitle')}>
         <div className="space-y-4">

@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, getTransactionTypeLabel, downloadBlob } fro
 import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
+import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
 import { HiDownload } from 'react-icons/hi';
 
@@ -46,16 +47,18 @@ const AdminTransactions = () => {
   if (loading && !transactions.length) return <PageLoader />;
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">{t('adminDash.transactionManagement')}</h1>
-        <button onClick={handleExportExcel} className="btn-secondary">
-          <HiDownload className="w-4 h-4 mr-1" /> {t('adminDash.exportExcel')}
-        </button>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        title={t('adminDash.transactionManagement')}
+        actions={
+          <button type="button" onClick={handleExportExcel} className="btn-secondary">
+            <HiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('adminDash.exportExcel')}
+          </button>
+        }
+      />
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('search')} className="sm:w-64" />
+      <div className="filter-bar">
+        <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('search')} className="w-full sm:w-64" />
         <select className="input sm:w-40" value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}>
           <option value="">{t('adminDash.allTime')}</option>
           <option value="today">{t('adminDash.today')}</option>
@@ -74,38 +77,76 @@ const AdminTransactions = () => {
         </select>
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">{t('table.id')}</th>
-              <th className="text-left py-3 px-2">{t('table.user')}</th>
-              <th className="text-left py-3 px-2">{t('table.type')}</th>
-              <th className="text-right py-3 px-2">{t('table.amount')}</th>
-              <th className="text-left py-3 px-2">{t('table.description')}</th>
-              <th className="text-left py-3 px-2">{t('table.date')}</th>
-              <th className="text-left py-3 px-2">{t('table.status')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((txn) => (
-              <tr key={txn._id} className="border-b dark:border-gray-700/50">
-                <td className="py-3 px-2 font-mono text-xs">{txn.transactionId}</td>
-                <td className="py-3 px-2">{txn.user?.name}</td>
-                <td className="py-3 px-2">{getTransactionTypeLabel(txn.type)}</td>
-                <td className="py-3 px-2 text-right font-medium">{formatCurrency(txn.amount)}</td>
-                <td className="py-3 px-2 text-gray-500">{txn.description}</td>
-                <td className="py-3 px-2">{formatDate(txn.createdAt)}</td>
-                <td className="py-3 px-2"><Badge status={txn.status} /></td>
-              </tr>
-            ))}
-            {!transactions.length && (
-              <tr><td colSpan={7} className="py-8 text-center text-gray-500">{t('noData')}</td></tr>
-            )}
-          </tbody>
-        </table>
-        <Pagination meta={meta} onPageChange={setPage} />
+      <div className="mobile-list">
+        {transactions.map((txn) => (
+          <div key={txn._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <p className="mobile-list-title font-mono text-xs">{txn.transactionId}</p>
+                <p className="mobile-list-meta mt-0.5">{txn.user?.name}</p>
+              </div>
+              <Badge status={txn.status} />
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.type')}</label>
+                <span>{getTransactionTypeLabel(txn.type)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.amount')}</label>
+                <span className="font-medium">{formatCurrency(txn.amount)}</span>
+              </div>
+              <div className="mobile-list-field col-span-2">
+                <label>{t('table.description')}</label>
+                <span className="text-slate-500">{txn.description}</span>
+              </div>
+              <div className="mobile-list-field col-span-2">
+                <label>{t('table.date')}</label>
+                <span>{formatDate(txn.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        {!transactions.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
+        )}
       </div>
+
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('table.id')}</th>
+                <th>{t('table.user')}</th>
+                <th>{t('table.type')}</th>
+                <th className="text-right">{t('table.amount')}</th>
+                <th>{t('table.description')}</th>
+                <th>{t('table.date')}</th>
+                <th>{t('table.status')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((txn) => (
+                <tr key={txn._id}>
+                  <td className="font-mono text-xs">{txn.transactionId}</td>
+                  <td>{txn.user?.name}</td>
+                  <td>{getTransactionTypeLabel(txn.type)}</td>
+                  <td className="text-right font-medium">{formatCurrency(txn.amount)}</td>
+                  <td className="text-slate-500">{txn.description}</td>
+                  <td>{formatDate(txn.createdAt)}</td>
+                  <td><Badge status={txn.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!transactions.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t('noData')}</p>
+        )}
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
     </div>
   );
 };

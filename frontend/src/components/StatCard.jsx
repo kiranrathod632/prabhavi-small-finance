@@ -10,22 +10,22 @@ const StatCard = ({ title, value, icon: Icon, color = 'primary', subtitle }) => 
 
   return (
     <div className="card-glow group h-full hover:border-violet-500/35 transition-all duration-300">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-1.5 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs sm:text-sm font-medium text-slate-400 leading-snug break-words">{title}</p>
+          <p className="text-[9px] sm:text-sm font-medium text-slate-400 leading-snug break-words line-clamp-2">{title}</p>
           <p
-            className="mt-1.5 font-bold text-white tracking-tight break-all tabular-nums leading-tight text-lg sm:text-xl lg:text-2xl"
+            className="mt-0.5 sm:mt-1.5 font-bold text-white tracking-tight break-all tabular-nums leading-tight text-[13px] sm:text-xl lg:text-2xl"
             title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
           >
             {value}
           </p>
           {subtitle && (
-            <p className="text-xs text-slate-500 mt-1.5 break-words">{subtitle}</p>
+            <p className="text-[9px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1.5 break-words line-clamp-1">{subtitle}</p>
           )}
         </div>
         {Icon && (
-          <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 ${colorClasses[color] || colorClasses.primary} group-hover:scale-105 transition-transform`}>
-            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+          <div className={`p-1 sm:p-3 rounded-md sm:rounded-xl shrink-0 ${colorClasses[color] || colorClasses.primary} group-hover:scale-105 transition-transform`}>
+            <Icon className="w-3 h-3 sm:w-6 sm:h-6" />
           </div>
         )}
       </div>

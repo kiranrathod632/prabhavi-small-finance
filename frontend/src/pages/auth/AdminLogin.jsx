@@ -3,19 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { HiOutlineLockClosed, HiOutlineMail, HiOutlineEye, HiOutlineEyeOff, HiOutlineShieldCheck } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/helpers';
 import { isAdminPanelRole, getDashboardPath } from '../../utils/roles';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
-/**
- * Admin Portal — Login only (register at /admin/register)
- */
 const AdminLogin = () => {
   const { adminPanelLogin, logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const onSubmit = async (data) => {
@@ -41,16 +40,24 @@ const AdminLogin = () => {
 
   return (
     <div>
-      <p className="auth-eyebrow">{t('welcomeBack')}</p>
-      <h2 className="auth-title">{t('adminLogin')}</h2>
-      <p className="auth-subtitle">{t('adminPortal')}</p>
+      <div className="auth-header">
+        <div className="auth-header-icon">
+          <HiOutlineShieldCheck className="w-5 h-5 sm:w-8 sm:h-8" />
+        </div>
+        <p className="auth-eyebrow">{t('welcomeBack')}</p>
+        <h2 className="auth-title">{t('adminLogin')}</h2>
+        <p className="auth-subtitle mt-1.5 sm:mt-2">{t('adminPortal')}</p>
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <label className="label">{t('emailOrMobile')}</label>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-5">
+        <div className="auth-field">
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlineMail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
+            {t('emailOrMobile')}
+          </label>
           <input
             type="text"
-            className="input"
+            className="auth-input"
             placeholder="admin@financeloan.com or 9876543210"
             autoComplete="username"
             {...register('credential', {
@@ -65,35 +72,52 @@ const AdminLogin = () => {
               },
             })}
           />
-          {errors.credential && <p className="text-red-400 text-sm mt-1">{errors.credential.message}</p>}
+          {errors.credential && <p className="auth-error">{errors.credential.message}</p>}
         </div>
 
-        <div>
-          <label className="label">{t('password')}</label>
-          <input
-            type="password"
-            className="input"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            {...register('password', { required: t('required') })}
-          />
-          {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>}
+        <div className="auth-field">
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlineLockClosed className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
+            {t('password')}
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className="auth-input pr-10"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              {...register('password', { required: t('required') })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-400 transition-colors"
+            >
+              {showPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.password && <p className="auth-error">{errors.password.message}</p>}
         </div>
 
         <div className="text-right">
-          <Link to="/user/forgot-password" className="text-sm link-accent">
+          <Link to="/user/forgot-password" className="text-[11px] sm:text-sm link-accent font-semibold">
             {t('forgotPassword')}
           </Link>
         </div>
 
-        <button type="submit" disabled={loading} className="btn-primary w-full rounded-xl">
-          {loading ? <LoadingSpinner size="sm" /> : t('signIn')}
+        <button type="submit" disabled={loading} className="auth-btn-primary group">
+          {loading ? <LoadingSpinner size="sm" /> : (
+            <span className="flex items-center justify-center gap-1.5">
+              {t('signIn')}
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </span>
+          )}
         </button>
       </form>
 
-      <p className="text-center mt-5 text-sm text-slate-500">
+      <p className="text-center mt-3 sm:mt-5 text-[11px] sm:text-sm text-slate-400">
         {t('noAccount')}{' '}
-        <Link to="/admin/register" className="link-accent font-medium">
+        <Link to="/admin/register" className="link-accent font-bold">
           {t('adminRegister')}
         </Link>
       </p>

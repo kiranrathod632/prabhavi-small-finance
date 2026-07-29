@@ -49,54 +49,62 @@ const seedDatabase = async () => {
       console.log('ℹ️ Super Admin already exists: vitthal@gmail.com');
     }
 
-    // ── Admin Users ──
+    // ── Admin Users (Prabhavi Small Finance — महाराष्ट्र पाचोरा, स्थापना ४ जुलै २०१९) ──
     const adminUsers = [
       {
         name: 'विठ्ठल दारासिंग राठोड',
+        designation: 'अध्यक्ष',
         email: 'vitthal.rathod@financeloan.com',
-        mobile: '8888888801',
+        mobile: '8407912252',
         password: 'Vitthal@123',
       },
       {
         name: 'रमेश रामलाल राठोड',
+        designation: 'उपाध्यक्ष',
         email: 'ramesh.rathod@financeloan.com',
-        mobile: '8888888802',
+        mobile: '8459050109',
         password: 'Ramesh@123',
       },
       {
         name: 'भाईदास दगडू चव्हाण',
+        designation: 'सदस्य',
         email: 'bhaidas.chavan@financeloan.com',
-        mobile: '8888888803',
+        mobile: '7498502572',
         password: 'Bhaidas@123',
       },
       {
         name: 'युवराज दिलीप राठोड',
+        designation: 'सदस्य',
         email: 'yuvaraj.rathod@financeloan.com',
-        mobile: '8888888804',
+        mobile: '8080178939',
         password: 'Yuvaraj@123',
       },
       {
         name: 'विलास शिवदास जाधव',
+        designation: 'सदस्य',
         email: 'vilas.jadhav@financeloan.com',
-        mobile: '8888888805',
+        mobile: '9322361650',
         password: 'Vilas@123',
       },
       {
         name: 'राजेंद्र रतिलाल राठोड',
+        designation: 'सदस्य',
         email: 'rajendra.rathod@financeloan.com',
-        mobile: '8888888806',
+        mobile: '9529817258',
         password: 'Rajendra@123',
       },
       {
         name: 'भागवत धनसिंग चव्हाण',
+        designation: 'सदस्य',
         email: 'bhagwat.chavan@financeloan.com',
-        mobile: '8888888807',
+        mobile: '7875048923',
         password: 'Bhagwat@123',
       },
       {
         name: 'भारत भंगलाल जाधव',
+        designation: 'सदस्य',
         email: 'bharat.jadhav@financeloan.com',
-        mobile: '8888888808',
+        mobile: '7822026084',
         password: 'Bharat@123',
       },
     ];
@@ -133,9 +141,16 @@ const seedDatabase = async () => {
         });
 
         adminCount++;
-        console.log(`✅ Admin created: ${adminData.email} / ${adminData.password}`);
+        console.log(`✅ Admin created: ${adminData.name} (${adminData.designation}) — ${adminData.email} / ${adminData.password} — Mobile: ${adminData.mobile}`);
       } else {
-        console.log(`ℹ️ Admin already exists: ${adminData.email}`);
+        // Update mobile number if it changed
+        if (existingAdmin.mobile !== adminData.mobile) {
+          existingAdmin.mobile = adminData.mobile;
+          await existingAdmin.save();
+          console.log(`🔄 Admin mobile updated: ${adminData.email} → ${adminData.mobile}`);
+        } else {
+          console.log(`ℹ️ Admin already exists: ${adminData.email}`);
+        }
       }
     }
 
@@ -162,6 +177,11 @@ const seedDatabase = async () => {
     }
     
     console.log('🎉 Database seeding completed successfully!');
+    console.log('');
+    console.log('══════════════════════════════════════════════');
+    console.log('  प्रभावी स्मॉल फायनान्स — Prabhavi Small Finance');
+    console.log('  📍 महाराष्ट्र पाचोरा · स्थापना ४ जुलै २०१९');
+    console.log('══════════════════════════════════════════════');
     process.exit(0);
   } catch (error) {
     console.error('Seed error:', error.message);

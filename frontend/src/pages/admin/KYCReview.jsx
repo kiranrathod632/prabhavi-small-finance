@@ -4,6 +4,7 @@ import { kycAPI } from '../../services';
 import { formatDate } from '../../utils/helpers';
 import Badge from '../../components/Badge';
 import Pagination from '../../components/Pagination';
+import PageHeader from '../../components/PageHeader';
 
 const KYCReview = () => {
   const [profiles, setProfiles] = useState([]);
@@ -33,39 +34,77 @@ const KYCReview = () => {
     }
   };
 
+  const kycActions = (p) => (
+    <>
+      <button type="button" onClick={() => review(p.user._id, 'verified')} className="btn-success action-chip">Verify</button>
+      <button type="button" onClick={() => review(p.user._id, 'rejected')} className="btn-danger action-chip">Reject</button>
+    </>
+  );
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">KYC Review</h1>
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">User</th>
-              <th className="text-left py-3 px-2">Mobile</th>
-              <th className="text-left py-3 px-2">PAN</th>
-              <th className="text-left py-3 px-2">Status</th>
-              <th className="text-left py-3 px-2">Submitted</th>
-              <th className="text-right py-3 px-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {profiles.map((p) => (
-              <tr key={p._id} className="border-b dark:border-gray-700/50">
-                <td className="py-3 px-2">{p.user?.name}</td>
-                <td className="py-3 px-2">{p.user?.mobile || p.phone}</td>
-                <td className="py-3 px-2 font-mono">{p.pan}</td>
-                <td className="py-3 px-2"><Badge status={p.kycStatus} /></td>
-                <td className="py-3 px-2">{formatDate(p.kycSubmittedAt)}</td>
-                <td className="py-3 px-2 text-right space-x-2">
-                  <button onClick={() => review(p.user._id, 'verified')} className="btn-success text-xs py-1 px-2">Verify</button>
-                  <button onClick={() => review(p.user._id, 'rejected')} className="btn-danger text-xs py-1 px-2">Reject</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Pagination meta={meta} onPageChange={setPage} />
+    <div className="page-stack">
+      <PageHeader title="KYC Review" />
+
+      <div className="mobile-list">
+        {profiles.map((p) => (
+          <div key={p._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <p className="mobile-list-title">{p.user?.name}</p>
+                <p className="mobile-list-meta mt-0.5">{p.user?.mobile || p.phone}</p>
+              </div>
+              <Badge status={p.kycStatus} />
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>PAN</label>
+                <span className="font-mono">{p.pan}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>Submitted</label>
+                <span>{formatDate(p.kycSubmittedAt)}</span>
+              </div>
+            </div>
+            <div className="mobile-list-actions">{kycActions(p)}</div>
+          </div>
+        ))}
+        {!profiles.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">No pending KYC applications</p>
+        )}
       </div>
+
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Mobile</th>
+                <th>PAN</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {profiles.map((p) => (
+                <tr key={p._id}>
+                  <td>{p.user?.name}</td>
+                  <td>{p.user?.mobile || p.phone}</td>
+                  <td className="font-mono">{p.pan}</td>
+                  <td><Badge status={p.kycStatus} /></td>
+                  <td>{formatDate(p.kycSubmittedAt)}</td>
+                  <td className="text-right">
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{kycActions(p)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
     </div>
   );
 };

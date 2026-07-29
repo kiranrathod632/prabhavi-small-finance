@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { HiOutlinePhone, HiOutlineKey, HiSparkles } from 'react-icons/hi';
+import { HiOutlinePhone, HiOutlineKey, HiOutlineShieldCheck } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import { otpAPI } from '../../services';
 import { registerMobileUser } from '../../services/authService';
@@ -68,30 +68,31 @@ const Register = () => {
     <div>
       <div className="auth-header">
         <div className="auth-header-icon">
-          <HiSparkles className="w-8 h-8 sm:w-9 sm:h-9" />
+          <HiOutlineShieldCheck className="w-5 h-5 sm:w-8 sm:h-8" />
         </div>
         <p className="auth-eyebrow">{t('createAccount')}</p>
         <h2 className="auth-title">{t('register')}</h2>
-        <p className="auth-subtitle mt-3">
+        <p className="auth-subtitle mt-1.5 sm:mt-3">
           {t('userRegister.mobileFirstSubtitle')}
         </p>
       </div>
 
       <div className="auth-steps">
-        <span className={`auth-step-pill ${!otpSent ? 'auth-step-pill-active' : ''}`}>
-          <span className="auth-step-num">1</span>
+        <span className={`auth-step-pill ${!otpSent ? 'auth-step-pill-active' : 'auth-step-pill-done'}`}>
+          <span className="auth-step-num">{otpSent ? '✓' : '1'}</span>
           {t('mobile')}
         </span>
+        <span className="w-5 sm:w-8 h-px bg-white/10" />
         <span className={`auth-step-pill ${otpSent ? 'auth-step-pill-active' : ''}`}>
           <span className="auth-step-num">2</span>
           {t('otp')}
         </span>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-5">
         <div className="auth-field">
-          <label className="auth-label flex items-center gap-2.5">
-            <HiOutlinePhone className="w-5 h-5 text-violet-400 shrink-0" />
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlinePhone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
             {t('mobile')}
           </label>
           <input
@@ -115,25 +116,26 @@ const Register = () => {
             type="button"
             onClick={handleSendOtp}
             disabled={otpSending || !mobile}
-            className="auth-btn-ghost mt-4"
+            className="auth-btn-ghost mt-2.5 sm:mt-3"
           >
             {otpSending ? <LoadingSpinner size="sm" /> : t('sendOtp')}
           </button>
 
           {otpSent ? (
-            <p className="auth-hint mt-3 text-emerald-400 font-medium">
-              ✓ {t('otpSent')} — {verifiedMobile}
+            <p className="auth-hint mt-2 text-emerald-400 font-medium flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500/20 flex items-center justify-center text-[9px]">✓</span>
+              {t('otpSent')} — {verifiedMobile}
             </p>
           ) : (
-            <p className="auth-hint mt-3">{t('userRegister.mobileOtpHint')}</p>
+            <p className="auth-hint mt-2">{t('userRegister.mobileOtpHint')}</p>
           )}
         </div>
 
         <div className="auth-divider" />
 
         <div className="auth-field">
-          <label className="auth-label flex items-center gap-2.5">
-            <HiOutlineKey className="w-5 h-5 text-violet-400 shrink-0" />
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlineKey className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
             {t('verifyOtp')}
           </label>
           <input
@@ -155,12 +157,17 @@ const Register = () => {
         <button
           type="submit"
           disabled={loading || !otpSent}
-          className="auth-btn-primary mt-2"
+          className="auth-btn-primary group"
         >
-          {loading ? <LoadingSpinner size="sm" /> : t('userRegister.continueToProfile')}
+          {loading ? <LoadingSpinner size="sm" /> : (
+            <span className="flex items-center justify-center gap-1.5">
+              {t('userRegister.continueToProfile')}
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </span>
+          )}
         </button>
 
-        <p className="text-center text-[15px] text-slate-400 pt-2 pb-1">
+        <p className="text-center text-[11px] sm:text-sm text-slate-400 pt-1 pb-0.5">
           {t('haveAccount')}{' '}
           <Link to="/user/login" className="link-accent font-bold">{t('signIn')}</Link>
         </p>

@@ -74,19 +74,19 @@ const Sidebar = ({ isOpen, onClose }) => {
         }`}
         style={{ background: 'rgba(5, 10, 23, 0.92)' }}
       >
-        <div className="p-5 border-b border-accent-400/10 flex items-start justify-between gap-2">
+        <div className="p-3 sm:p-5 border-b border-accent-400/10 flex items-start justify-between gap-2">
           <BrandLogo size="sm" variant="dark" forceShort onClick={onClose} />
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-primary-300"
+            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-primary-300"
             aria-label="Close menu"
           >
-            <HiX className="w-5 h-5" />
+            <HiX className="w-4 h-4" />
           </button>
         </div>
 
-        <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
+        <nav className="p-2 sm:p-3 space-y-0.5 sm:space-y-1 flex-1 overflow-y-auto">
           {links.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
@@ -94,19 +94,19 @@ const Sidebar = ({ isOpen, onClose }) => {
               onClick={onClose}
               className={`nav-link ${isActive(to) ? 'nav-link-active' : 'nav-link-idle'}`}
             >
-              <Icon className="w-5 h-5 shrink-0" />
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <span className="truncate">{label}</span>
             </Link>
           ))}
         </nav>
 
-        <div className="p-3 border-t border-accent-400/10">
+        <div className="p-2 sm:p-3 border-t border-accent-400/10">
           <button
             type="button"
             onClick={logout}
             className="nav-link w-full text-red-300 hover:bg-red-500/15 hover:text-red-200"
           >
-            <HiLogout className="w-5 h-5" />
+            <HiLogout className="w-4 h-4 sm:w-5 sm:h-5" />
             {t('logout')}
           </button>
         </div>

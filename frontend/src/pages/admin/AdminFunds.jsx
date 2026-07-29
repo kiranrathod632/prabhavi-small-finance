@@ -6,6 +6,7 @@ import adminPanelAPI from '../../services/adminPanelAPI';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import StatCard from '../../components/StatCard';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { HiCurrencyRupee } from 'react-icons/hi';
 import { PageLoader } from '../../components/LoadingSpinner';
 
@@ -60,11 +61,22 @@ const AdminFunds = () => {
         ? t('adminDash.withdraw')
         : t('adminDash.addExpense');
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">{t('adminDash.fundManagement')}</h1>
+  const history = fund?.history?.length > 0 ? fund.history.slice().reverse().slice(0, 20) : [];
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title={t('adminDash.fundManagement')}
+        actions={
+          <>
+            <button type="button" onClick={() => openAction('deposit')} className="btn-success action-chip">{t('adminDash.deposit')}</button>
+            <button type="button" onClick={() => openAction('withdrawal')} className="btn-secondary action-chip">{t('adminDash.withdraw')}</button>
+            <button type="button" onClick={() => openAction('expense')} className="btn-danger action-chip">{t('adminDash.addExpense')}</button>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title={t('adminDash.companyFund')} value={formatCurrency(fund?.companyFund)} icon={HiCurrencyRupee} color="primary" />
         <StatCard title={t('adminDash.availableFund')} value={formatCurrency(fund?.availableFund)} icon={HiCurrencyRupee} color="green" />
         <StatCard title={t('adminDash.loanDistributed')} value={formatCurrency(fund?.loanDistributed)} icon={HiCurrencyRupee} color="red" />
@@ -73,38 +85,56 @@ const AdminFunds = () => {
         <StatCard title={t('adminDash.profit')} value={formatCurrency(fund?.profit)} icon={HiCurrencyRupee} color="indigo" />
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <button onClick={() => openAction('deposit')} className="btn-success">{t('adminDash.deposit')}</button>
-        <button onClick={() => openAction('withdrawal')} className="btn-secondary">{t('adminDash.withdraw')}</button>
-        <button onClick={() => openAction('expense')} className="btn-danger">{t('adminDash.addExpense')}</button>
-      </div>
+      {history.length > 0 && (
+        <>
+          <h3 className="font-semibold text-sm">{t('adminDash.fundHistory')}</h3>
 
-      {fund?.history?.length > 0 && (
-        <div className="card">
-          <h3 className="font-semibold mb-4">{t('adminDash.fundHistory')}</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b dark:border-gray-700">
-                  <th className="text-left py-2 px-2">{t('table.type')}</th>
-                  <th className="text-right py-2 px-2">{t('table.amount')}</th>
-                  <th className="text-left py-2 px-2">{t('table.description')}</th>
-                  <th className="text-left py-2 px-2">{t('table.date')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fund.history.slice().reverse().slice(0, 20).map((h, i) => (
-                  <tr key={i} className="border-b dark:border-gray-700/50">
-                    <td className="py-2 px-2 capitalize">{h.type}</td>
-                    <td className="py-2 px-2 text-right">{formatCurrency(h.amount)}</td>
-                    <td className="py-2 px-2">{h.description || '-'}</td>
-                    <td className="py-2 px-2">{formatDate(h.date || h.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mobile-list">
+            {history.map((h, i) => (
+              <div key={i} className="mobile-list-item">
+                <div className="mobile-list-head">
+                  <p className="mobile-list-title capitalize">{h.type}</p>
+                  <span className="font-medium">{formatCurrency(h.amount)}</span>
+                </div>
+                <div className="mobile-list-grid">
+                  <div className="mobile-list-field col-span-2">
+                    <label>{t('table.description')}</label>
+                    <span>{h.description || '-'}</span>
+                  </div>
+                  <div className="mobile-list-field col-span-2">
+                    <label>{t('table.date')}</label>
+                    <span>{formatDate(h.date || h.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          <div className="card desktop-table">
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t('table.type')}</th>
+                    <th className="text-right">{t('table.amount')}</th>
+                    <th>{t('table.description')}</th>
+                    <th>{t('table.date')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h, i) => (
+                    <tr key={i}>
+                      <td className="capitalize">{h.type}</td>
+                      <td className="text-right">{formatCurrency(h.amount)}</td>
+                      <td>{h.description || '-'}</td>
+                      <td>{formatDate(h.date || h.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={actionTitle}>

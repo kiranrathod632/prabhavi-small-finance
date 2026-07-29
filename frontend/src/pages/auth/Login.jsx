@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { HiOutlineLockClosed, HiOutlineMail, HiSparkles } from 'react-icons/hi';
+import { HiOutlineLockClosed, HiOutlineMail, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/helpers';
 import { isStaff } from '../../utils/roles';
@@ -14,6 +14,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const onSubmit = async (data) => {
@@ -40,17 +41,17 @@ const Login = () => {
     <div>
       <div className="auth-header">
         <div className="auth-header-icon">
-          <HiSparkles className="w-8 h-8 sm:w-9 sm:h-9" />
+          <HiOutlineMail className="w-5 h-5 sm:w-8 sm:h-8" />
         </div>
         <p className="auth-eyebrow">{t('welcomeBack')}</p>
         <h2 className="auth-title">{t('signIn')}</h2>
-        <p className="auth-subtitle mt-3">{t('userPortal')}</p>
+        <p className="auth-subtitle mt-1.5 sm:mt-3">{t('userPortal')}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-5">
         <div className="auth-field">
-          <label className="auth-label flex items-center gap-2.5">
-            <HiOutlineMail className="w-5 h-5 text-violet-400 shrink-0" />
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlineMail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
             {t('emailOrMobile')}
           </label>
           <input
@@ -74,31 +75,45 @@ const Login = () => {
         </div>
 
         <div className="auth-field">
-          <label className="auth-label flex items-center gap-2.5">
-            <HiOutlineLockClosed className="w-5 h-5 text-violet-400 shrink-0" />
+          <label className="auth-label flex items-center gap-1.5">
+            <HiOutlineLockClosed className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
             {t('password')}
           </label>
-          <input
-            type="password"
-            className="auth-input"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            {...register('password', { required: t('required') })}
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              className="auth-input pr-10"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              {...register('password', { required: t('required') })}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-400 transition-colors"
+            >
+              {showPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
+            </button>
+          </div>
           {errors.password && <p className="auth-error">{errors.password.message}</p>}
         </div>
 
         <div className="text-right">
-          <Link to="/user/forgot-password" className="text-[15px] link-accent font-semibold">
+          <Link to="/user/forgot-password" className="text-[11px] sm:text-sm link-accent font-semibold">
             {t('forgotPassword')}
           </Link>
         </div>
 
-        <button type="submit" disabled={loading} className="auth-btn-primary">
-          {loading ? <LoadingSpinner size="sm" /> : t('signIn')}
+        <button type="submit" disabled={loading} className="auth-btn-primary group">
+          {loading ? <LoadingSpinner size="sm" /> : (
+            <span className="flex items-center justify-center gap-1.5">
+              {t('signIn')}
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </span>
+          )}
         </button>
 
-        <p className="text-center text-[15px] text-slate-400 pt-2 pb-1">
+        <p className="text-center text-[11px] sm:text-sm text-slate-400 pt-1 pb-0.5">
           {t('noAccount')}{' '}
           <Link to="/user/register" className="link-accent font-bold">
             {t('register')}

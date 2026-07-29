@@ -89,7 +89,7 @@ const AdminDashboard = () => {
     return (
       <div>
         <PageHeader title={t('adminDash.title')} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
           {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       </div>
@@ -135,12 +135,12 @@ const AdminDashboard = () => {
           : cards.profitTotalYearly;
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       <PageHeader
         title={t('adminDash.title')}
         subtitle={t('adminPanel')}
         actions={
-          <Link to={`${base}/loans`} className="btn-accent text-sm">
+          <Link to={`${base}/loans`} className="btn-accent text-xs sm:text-sm">
             {t('adminDash.openLoanManager')}
           </Link>
         }
@@ -148,7 +148,7 @@ const AdminDashboard = () => {
 
       <section>
         <p className="section-label">{t('adminDash.availableFund')} / {t('funds')}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
           <StatCard title={t('adminDash.availableFund')} value={formatCurrency(cards.availableFund)}  color="green" />
           <StatCard title={t('adminDash.companyFund')} value={formatCurrency(cards.companyFund)}  color="indigo" />
           <StatCard title={t('adminDash.totalUsers')} value={cards.totalUsers}  color="primary" />
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
 
       <section>
         <p className="section-label">{t('loans')}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
           <StatCard title={t('adminDash.totalLoans')} value={cards.totalLoans}  color="indigo" />
           <StatCard title={t('adminDash.activeLoans')} value={cards.activeLoans}  color="green" />
           <StatCard title={t('adminDash.pendingLoans')} value={cards.pendingLoans}  color="yellow" />
@@ -168,7 +168,7 @@ const AdminDashboard = () => {
 
       <section>
         <p className="section-label">{t('emis')}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
           <StatCard title={t('adminDash.todayEmi')} value={formatCurrency(cards.todayEMICollection)} color="green" />
           <StatCard title={t('adminDash.monthlyCollection')} value={formatCurrency(cards.monthlyCollection)} color="primary" />
           <StatCard title={t('adminDash.loanDistributed')} value={formatCurrency(cards.loanDistributed)} color="red" />
@@ -178,10 +178,10 @@ const AdminDashboard = () => {
 
       {/* EMI / Interest / Profit totals quick view (additive only) */}
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="section-label">{t('adminDash.emiTotals')}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+          <p className="section-label !mb-0">{t('adminDash.emiTotals')}</p>
           <select
-            className="input sm:w-56"
+            className="input sm:w-56 text-xs sm:text-sm min-h-9 sm:min-h-11"
             value={emiTotalsPeriod}
             onChange={(e) => setEmiTotalsPeriod(e.target.value)}
           >
@@ -192,7 +192,7 @@ const AdminDashboard = () => {
           </select>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4 mt-3 sm:mt-4">
           <StatCard title={t('adminDash.emiTotal')} value={formatCurrency(emiTotal)} color="green" />
           <StatCard title={t('adminDash.interestTotal')} value={formatCurrency(interestTotal)} color="indigo" />
           <StatCard title={t('adminDash.profitTotal')} value={formatCurrency(profitTotal)} color="green" />
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
       </section>
    <div className="card">
         <div className="card-header">
-          <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.recentTransactions')}</h3>
+          <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.recentTransactions')}</h3>
         </div>
         <div className="data-table-wrap">
           <table className="data-table">
@@ -234,28 +234,28 @@ const AdminDashboard = () => {
           </table>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
         <div className="card">
           <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.monthlyLoans')}</h3>
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.monthlyLoans')}</h3>
           </div>
           <BarChart data={charts.monthlyLoans} label={t('adminDash.loanAmount')} color="#1e4463" />
         </div>
         <div className="card">
           <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.monthlyEmiCollection')}</h3>
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.monthlyEmiCollection')}</h3>
           </div>
           <LineChart data={charts.monthlyEMI} label={t('adminDash.emiCollectedLabel')} color="#0d9488" />
         </div>
         <div className="card">
           <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.userGrowth')}</h3>
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.userGrowth')}</h3>
           </div>
           <BarChart data={charts.userGrowth} label={t('adminDash.newUsers')} color="#2d5a7b" />
         </div>
         <div className="card">
           <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.loanRecovery')}</h3>
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.loanRecovery')}</h3>
           </div>
           <LineChart data={charts.loanRecovery} label={t('adminDash.principalRecovered')} color="#c99a2e" />
         </div>
@@ -263,11 +263,11 @@ const AdminDashboard = () => {
 
    
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-6">
         <div className="card">
           <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.joinedUsers')}</h3>
-            <Link to={`${base}/users`} className="text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.joinedUsers')}</h3>
+            <Link to={`${base}/users`} className="text-[11px] sm:text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
               {t('adminDash.viewAll')}
             </Link>
           </div>
@@ -310,8 +310,8 @@ const AdminDashboard = () => {
 
       <div className="card">
         <div className="card-header">
-          <h3 className="font-semibold text-primary-900 dark:text-white">{t('adminDash.pendingApplications')}</h3>
-          <Link to={`${base}/loans`} className="text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
+          <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.pendingApplications')}</h3>
+          <Link to={`${base}/loans`} className="text-[11px] sm:text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
             {t('adminDash.openLoanManager')}
           </Link>
         </div>

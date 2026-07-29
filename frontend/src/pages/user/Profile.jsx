@@ -115,16 +115,16 @@ const Profile = () => {
           <p className="page-subtitle">{t('tagline')}</p>
         </div>
         <div>
-          <p className="text-xs text-slate-500 mb-1">{t('selectLanguage')}</p>
-          <LanguageSelector className="w-40" onChange={handleLanguageChange} />
+          <p className="text-[10px] sm:text-xs text-slate-500 mb-1">{t('selectLanguage')}</p>
+          <LanguageSelector className="w-28 sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} />
         </div>
       </div>
 
-      <div className="profile-hero mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          <div className="relative shrink-0">
-            <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 shadow-glow-sm">
-              <div className="w-full h-full rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+      <div className="profile-hero mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 sm:gap-5">
+          <div className="relative shrink-0 self-start">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full p-0.5 sm:p-1 bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 shadow-glow-sm">
+              <div className="w-full h-full rounded-full bg-primary-600 flex items-center justify-center text-white text-xl sm:text-3xl font-bold overflow-hidden">
                 {user?.avatar ? (
                   <img src={user.avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -132,34 +132,34 @@ const Profile = () => {
                 )}
               </div>
             </div>
-            <label className="absolute bottom-1 right-1 bg-white text-slate-900 rounded-full p-2 shadow-lg cursor-pointer hover:scale-105 transition-transform">
-              <HiCamera className="w-4 h-4" />
+            <label className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 bg-white text-slate-900 rounded-full p-1.5 sm:p-2 shadow-lg cursor-pointer hover:scale-105 transition-transform">
+              <HiCamera className="w-3 h-3 sm:w-4 sm:h-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </label>
           </div>
 
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-300 mb-1">
+            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] sm:tracking-[0.18em] text-violet-300 mb-0.5 sm:mb-1">
               {t('personalInfo')}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white truncate">{displayName}</h2>
-            <p className="text-slate-400 mt-1">{user?.email || user?.mobile_number}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
+            <h2 className="text-lg sm:text-3xl font-bold text-white truncate">{displayName}</h2>
+            <p className="text-[12px] sm:text-base text-slate-400 mt-0.5 sm:mt-1 truncate">{user?.email || user?.mobile_number}</p>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
               {user?.firstName && (
-                <span className="tag-pill text-[11px]">{t('firstName')}: {user.firstName}</span>
+                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('firstName')}: {user.firstName}</span>
               )}
               {user?.middleName && (
-                <span className="tag-pill text-[11px]">{t('middleName')}: {user.middleName}</span>
+                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('middleName')}: {user.middleName}</span>
               )}
               {user?.lastName && (
-                <span className="tag-pill text-[11px]">{t('lastName')}: {user.lastName}</span>
+                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('lastName')}: {user.lastName}</span>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-5 overflow-x-auto pb-1 -mx-0.5 px-0.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -169,7 +169,7 @@ const Profile = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`profile-tab ${activeTab === tab.id ? 'profile-tab-active' : 'profile-tab-idle'}`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               {tab.label}
             </button>
           );
@@ -177,15 +177,15 @@ const Profile = () => {
       </div>
 
       {activeTab === 'personal' && (
-        <form onSubmit={handleSubmit(onSaveProfile)} className="card space-y-5">
-          <section className="form-section !p-4">
+        <form onSubmit={handleSubmit(onSaveProfile)} className="card space-y-3.5 sm:space-y-5">
+          <section className="form-section !p-3 sm:!p-4">
             <div className="form-section-title mb-1">
               <span className="form-section-icon">
-                <HiOutlineUser className="h-4 w-4" />
+                <HiOutlineUser className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
               {t('personalInfo')}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <label className="label">{t('firstName')}</label>
                 <input className="input" defaultValue={user?.firstName} {...register('firstName')} />
@@ -204,17 +204,17 @@ const Profile = () => {
             </div>
           </section>
 
-          <section className="form-section !p-4">
+          <section className="form-section !p-3 sm:!p-4">
             <div className="form-section-title mb-1">
               <span className="form-section-icon">
-                <HiOutlineLocationMarker className="h-4 w-4" />
+                <HiOutlineLocationMarker className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
               {t('ui.address')}
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="label flex items-center gap-2">
-                  <HiOutlinePhone className="h-3.5 w-3.5" />
+                <label className="label flex items-center gap-1.5">
+                  <HiOutlinePhone className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                   {t('mobile')}
                 </label>
                 <input className="input" {...register('phone')} />
@@ -234,22 +234,22 @@ const Profile = () => {
             </div>
           </section>
 
-          <button type="submit" disabled={saving} className="btn-primary min-w-[140px]">
+          <button type="submit" disabled={saving} className="btn-primary min-w-[120px] sm:min-w-[140px]">
             {saving ? <LoadingSpinner size="sm" /> : t('save')}
           </button>
         </form>
       )}
 
       {activeTab === 'bank' && (
-        <form onSubmit={handleSubmit(onSaveProfile)} className="card space-y-5">
-          <section className="form-section !p-4">
+        <form onSubmit={handleSubmit(onSaveProfile)} className="card space-y-3.5 sm:space-y-5">
+          <section className="form-section !p-3 sm:!p-4">
             <div className="form-section-title mb-1">
               <span className="form-section-icon">
-                <HiOutlineOfficeBuilding className="h-4 w-4" />
+                <HiOutlineOfficeBuilding className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
               {t('bankDetails')}
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="label">{t('ui.bankName')}</label>
                 <input className="input" {...register('bankName')} />
@@ -268,22 +268,22 @@ const Profile = () => {
               </div>
             </div>
           </section>
-          <button type="submit" disabled={saving} className="btn-primary min-w-[140px]">
+          <button type="submit" disabled={saving} className="btn-primary min-w-[120px] sm:min-w-[140px]">
             {saving ? <LoadingSpinner size="sm" /> : t('save')}
           </button>
         </form>
       )}
 
       {activeTab === 'password' && (
-        <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="card space-y-4 max-w-md">
-          <section className="form-section !p-4">
+        <form onSubmit={passwordForm.handleSubmit(onChangePassword)} className="card space-y-3 sm:space-y-4 max-w-md">
+          <section className="form-section !p-3 sm:!p-4">
             <div className="form-section-title mb-1">
               <span className="form-section-icon">
-                <HiOutlineLockClosed className="h-4 w-4" />
+                <HiOutlineLockClosed className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
               {t('changePassword')}
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label className="label">{t('currentPassword')}</label>
                 <input type="password" className="input" {...passwordForm.register('currentPassword', { required: true })} />
@@ -294,7 +294,7 @@ const Profile = () => {
               </div>
             </div>
           </section>
-          <button type="submit" className="btn-primary min-w-[180px]">{t('changePassword')}</button>
+          <button type="submit" className="btn-primary min-w-[140px] sm:min-w-[180px]">{t('changePassword')}</button>
         </form>
       )}
     </div>

@@ -12,6 +12,7 @@ import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
 import { HiPlus, HiPencil, HiTrash, HiDownload, HiEye } from 'react-icons/hi';
 
@@ -137,79 +138,162 @@ const AdminUsers = () => {
 
   if (loading && !users.length) return <PageLoader />;
 
+  const statusLabel = (user) =>
+    user.isSuspended ? (
+      <span className="text-red-400">{t('ui.suspended')}</span>
+    ) : user.isActive ? (
+      <span className="text-emerald-400">{t('ui.active')}</span>
+    ) : (
+      <span className="text-slate-500">{t('ui.inactive')}</span>
+    );
+
+  const roleLabel = (user) =>
+    user.role === 'admin' ? t('ui.admin') : user.role === 'user' ? t('ui.user') : user.role;
+
+  const userActions = (user) => (
+    <>
+      <button
+        type="button"
+        onClick={() => navigate(`${base}/users/${user._id}`)}
+        className="text-accent-400 p-1"
+        title={t('view')}
+      >
+        <HiEye className="w-4 h-4" />
+      </button>
+      <button type="button" onClick={() => openEdit(user)} className="text-accent-400 p-1" title={t('edit')}>
+        <HiPencil className="w-4 h-4" />
+      </button>
+      {user.role !== 'admin' && (
+        <button type="button" onClick={() => setDeleteUser(user)} className="text-red-400 p-1" title={t('delete')}>
+          <HiTrash className="w-4 h-4" />
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('adminUsers.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('adminUsers.joinedHint')}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleExport} className="btn-secondary"><HiDownload className="w-4 h-4 mr-1" /> {t('ui.export')}</button>
-          <button onClick={openCreate} className="btn-primary"><HiPlus className="w-4 h-4 mr-1" /> {t('adminUsers.addUser')}</button>
-        </div>
+    <div className="page-stack">
+      <PageHeader
+        title={t('adminUsers.title')}
+        subtitle={t('adminUsers.joinedHint')}
+        actions={
+          <>
+            <button type="button" onClick={handleExport} className="btn-secondary">
+              <HiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('ui.export')}
+            </button>
+            <button type="button" onClick={openCreate} className="btn-primary">
+              <HiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('adminUsers.addUser')}
+            </button>
+          </>
+        }
+      />
+
+      <div className="filter-bar">
+        <SearchBar
+          value={search}
+          onChange={(v) => {
+            setSearch(v);
+            setPage(1);
+          }}
+          placeholder={t('adminUsers.searchPlaceholder')}
+          className="w-full sm:w-80"
+        />
       </div>
 
-      <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('adminUsers.searchPlaceholder')} className="mb-4 sm:w-80" />
-
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">{t('table.name')}</th>
-              <th className="text-left py-3 px-2">{t('table.email')}</th>
-              <th className="text-left py-3 px-2">{t('table.role')}</th>
-              <th className="text-left py-3 px-2">{t('adminUsers.selectAdmin')}</th>
-              <th className="text-right py-3 px-2">{t('table.wallet')}</th>
-              <th className="text-left py-3 px-2">{t('table.status')}</th>
-              <th className="text-left py-3 px-2">{t('ui.joined')}</th>
-              <th className="text-right py-3 px-2">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user._id} className="border-b dark:border-gray-700/50">
-                <td className="py-3 px-2 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${base}/users/${user._id}`)}
-                    className="text-primary-700 hover:underline text-left"
-                  >
-                    {user.name}
-                  </button>
-                </td>
-                <td className="py-3 px-2">{user.email}</td>
-                <td className="py-3 px-2 capitalize">{user.role === 'admin' ? t('ui.admin') : user.role === 'user' ? t('ui.user') : user.role}</td>
-                <td className="py-3 px-2">{user.adminId?.name || '-'}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(user.walletBalance)}</td>
-                <td className="py-3 px-2">
-                  {user.isSuspended ? <span className="text-red-500">{t('ui.suspended')}</span> :
-                    user.isActive ? <span className="text-green-500">{t('ui.active')}</span> : <span className="text-gray-500">{t('ui.inactive')}</span>}
-                </td>
-                <td className="py-3 px-2">{formatDate(user.createdAt)}</td>
-                <td className="py-3 px-2 text-right space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`${base}/users/${user._id}`)}
-                    className="text-primary-600"
-                    title={t('view')}
-                  >
-                    <HiEye className="w-4 h-4 inline" />
-                  </button>
-                  <button onClick={() => openEdit(user)} className="text-primary-600"><HiPencil className="w-4 h-4 inline" /></button>
-                  {user.role !== 'admin' && (
-                    <button onClick={() => setDeleteUser(user)} className="text-red-500"><HiTrash className="w-4 h-4 inline" /></button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Mobile cards */}
+      <div className="mobile-list">
+        {users.map((user) => (
+          <div key={user._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => navigate(`${base}/users/${user._id}`)}
+                  className="mobile-list-title text-left link-accent"
+                >
+                  {user.name}
+                </button>
+                <p className="mobile-list-meta mt-0.5">{user.email}</p>
+              </div>
+              <div className="flex items-center gap-0.5 shrink-0">{userActions(user)}</div>
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.role')}</label>
+                <span className="capitalize">{roleLabel(user)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.status')}</label>
+                <span>{statusLabel(user)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('adminUsers.selectAdmin')}</label>
+                <span>{user.adminId?.name || '-'}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.wallet')}</label>
+                <span>{formatCurrency(user.walletBalance)}</span>
+              </div>
+              <div className="mobile-list-field col-span-2">
+                <label>{t('ui.joined')}</label>
+                <span>{formatDate(user.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
         {!users.length && (
-          <p className="p-4 text-center text-gray-500">{t('adminUsers.noJoinedUsers')}</p>
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('adminUsers.noJoinedUsers')}</p>
         )}
-        <Pagination meta={meta} onPageChange={setPage} />
       </div>
+
+      {/* Desktop table */}
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('table.name')}</th>
+                <th>{t('table.email')}</th>
+                <th>{t('table.role')}</th>
+                <th>{t('adminUsers.selectAdmin')}</th>
+                <th className="text-right">{t('table.wallet')}</th>
+                <th>{t('table.status')}</th>
+                <th>{t('ui.joined')}</th>
+                <th className="text-right">{t('table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user._id}>
+                  <td className="font-medium">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`${base}/users/${user._id}`)}
+                      className="link-accent text-left"
+                    >
+                      {user.name}
+                    </button>
+                  </td>
+                  <td>{user.email}</td>
+                  <td className="capitalize">{roleLabel(user)}</td>
+                  <td>{user.adminId?.name || '-'}</td>
+                  <td className="text-right">{formatCurrency(user.walletBalance)}</td>
+                  <td>{statusLabel(user)}</td>
+                  <td>{formatDate(user.createdAt)}</td>
+                  <td className="text-right">
+                    <div className="inline-flex items-center gap-0.5">{userActions(user)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!users.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t('adminUsers.noJoinedUsers')}</p>
+        )}
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
 
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editUser ? t('adminUsers.editUser') : t('adminUsers.addUser')}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

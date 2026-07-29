@@ -29,8 +29,28 @@ const AuthLayout = () => {
       <div className="relative hidden lg:flex lg:w-[42%] xl:w-[40%] text-white p-12 flex-col justify-between overflow-hidden min-h-screen">
         <div className="absolute inset-0 bg-gradient-hero opacity-90" />
         <div className="relative z-10">
-          <BrandLogo size="md" variant="light" />
-          <span className="inline-flex mt-10 tag-pill">
+          <div className="flex flex-col items-start gap-4">
+            <img src="/logo.png" alt="Prabhavi Small Finance" className="w-20 h-20 rounded-2xl object-contain bg-white p-1.5 shadow-glow-sm ring-1 ring-violet-500/30" />
+            <div>
+              <h2 className="font-display text-2xl font-bold gradient-text">प्रभावी स्मॉल फायनान्स</h2>
+              <p className="text-sm text-slate-400 mt-1">Prabhavi Small Finance</p>
+            </div>
+          </div>
+          <div className="mt-8 p-4 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-violet-300 mb-3">📍 महाराष्ट्र पाचोरा · स्थापना ४ जुलै २०१९</p>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { name: 'विठ्ठल दारासिंग राठोड', role: 'अध्यक्ष', phone: '8407912252' },
+                { name: 'रमेश रामलाल राठोड', role: 'उपाध्यक्ष', phone: '8459050109' },
+              ].map((m) => (
+                <div key={m.phone} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">{m.name} <span className="text-violet-400 text-xs">({m.role})</span></span>
+                  <span className="text-slate-500 text-xs">{m.phone}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <span className="inline-flex mt-8 tag-pill">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-400 shadow-glow-sm" />
             {t('tagline')}
           </span>
@@ -58,17 +78,18 @@ const AuthLayout = () => {
       </div>
 
       {/* Form panel — full width on mobile */}
-      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center py-5 sm:py-8 lg:py-10 relative min-h-[100dvh] lg:min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center py-3 sm:py-8 lg:py-10 relative min-h-[100dvh] lg:min-h-0">
         <div className="auth-shell-mobile">
-          <BrandLogo size="sm" variant="light" />
-          <p className="text-[13px] text-slate-500 max-w-[280px] leading-snug">{t('tagline')}</p>
+          <img src="/logo.png" alt="Prabhavi Small Finance" className="w-11 h-11 rounded-lg object-contain bg-white p-0.5 shadow-glow-sm ring-1 ring-violet-500/30" />
+          <p className="font-display font-bold text-[13px] gradient-text">प्रभावी स्मॉल फायनान्स</p>
+          <p className="text-[11px] text-slate-500 max-w-[240px] leading-snug">{t('tagline')}</p>
         </div>
 
         <div className="auth-form-wrap animate-fade-up flex-1 lg:flex-none w-full flex flex-col">
-          <div className="auth-card px-6 py-8 xs:px-7 xs:py-9 sm:px-9 sm:py-10 flex-1 lg:flex-none">
+          <div className="auth-card px-3.5 py-4 sm:px-9 sm:py-10 flex-1 lg:flex-none">
             <Outlet />
           </div>
-          <p className="mt-6 text-center text-[14px] text-slate-500 lg:hidden pb-4">
+          <p className="mt-3 sm:mt-6 text-center text-[11px] sm:text-[14px] text-slate-500 lg:hidden pb-3">
             <Link to="/" className="link-accent">{t('backToHome')}</Link>
             {' · '}
             <Link to="/admin/login" className="link-accent">{t('adminPortal')}</Link>

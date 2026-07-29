@@ -9,6 +9,7 @@ import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
 import { HiPlus, HiDownload } from 'react-icons/hi';
 
@@ -83,17 +84,39 @@ const Loans = () => {
 
   const statusOptions = ['pending', 'under_review', 'approved', 'active', 'closed', 'rejected'];
 
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">{t('myLoans')}</h1>
-        <button onClick={() => setShowApply(true)} className="btn-primary">
-          <HiPlus className="w-4 h-4 mr-1" /> {t('ui.applyLoan')}
+  const loanActions = (loan) => (
+    <>
+      {loan.status === 'approved' && !loan.tenure && (
+        <Link to={`/loans/${loan._id}`} className="btn-primary action-chip">
+          {t('ui.selectTenure')}
+        </Link>
+      )}
+      {['active', 'closed'].includes(loan.status) && (
+        <button
+          type="button"
+          onClick={() => handleDownload(loan._id, loan.loanId)}
+          className="text-accent-400 p-1"
+          title={t('ui.downloadStatement')}
+        >
+          <HiDownload className="w-4 h-4" />
         </button>
-      </div>
+      )}
+    </>
+  );
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('ui.searchLoans')} className="sm:w-64" />
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title={t('myLoans')}
+        actions={
+          <button type="button" onClick={() => setShowApply(true)} className="btn-primary">
+            <HiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('ui.applyLoan')}
+          </button>
+        }
+      />
+
+      <div className="filter-bar">
+        <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('ui.searchLoans')} className="w-full sm:w-64" />
         <select className="input sm:w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           <option value="">{t('ui.allStatus')}</option>
           {statusOptions.map((s) => (
@@ -102,65 +125,107 @@ const Loans = () => {
         </select>
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">{t('table.loanId')}</th>
-              <th className="text-left py-3 px-2">{t('table.type')}</th>
-              <th className="text-right py-3 px-2">{t('table.amount')}</th>
-              <th className="text-right py-3 px-2">{t('ui.rate')}</th>
-              <th className="text-right py-3 px-2">{t('ui.tenure')}</th>
-              <th className="text-right py-3 px-2">{t('loan.emiAmount')}</th>
-              <th className="text-right py-3 px-2">{t('ui.remaining')}</th>
-              <th className="text-left py-3 px-2">{t('table.status')}</th>
-              <th className="text-left py-3 px-2">{t('table.date')}</th>
-              <th className="text-right py-3 px-2">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loans.map((loan) => (
-              <tr key={loan._id} className="border-b dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <td className="py-3 px-2">
-                  <Link to={`/loans/${loan._id}`} className="text-primary-600 hover:underline font-medium">{loan.loanId}</Link>
-                </td>
-                <td className="py-3 px-2">{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.amount)}</td>
-                <td className="py-3 px-2 text-right">{loan.interestRate}%</td>
-                <td className="py-3 px-2 text-right">{loan.tenure ? `${loan.tenure}m` : '-'}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.emiAmount)}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.remainingBalance)}</td>
-                <td className="py-3 px-2">
-                  <Badge status={loan.status} />
-                  {loan.status === 'approved' && !loan.tenure && (
-                    <span className="ml-1 text-xs text-yellow-600">({t('ui.selectTenure')})</span>
-                  )}
-                </td>
-                <td className="py-3 px-2">{formatDate(loan.createdAt)}</td>
-                <td className="py-3 px-2 text-right">
-                  {loan.status === 'approved' && !loan.tenure && (
-                    <Link
-                      to={`/loans/${loan._id}`}
-                      className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                    >
-                      {t('ui.selectTenure')}
-                    </Link>
-                  )}
-                  {['active', 'closed'].includes(loan.status) && (
-                    <button onClick={() => handleDownload(loan._id, loan.loanId)} className="text-primary-600 hover:text-primary-700" title={t('ui.downloadStatement')}>
-                      <HiDownload className="w-4 h-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loans.length && (
-              <tr><td colSpan={10} className="py-8 text-center text-gray-500">{t('ui.noLoans')}</td></tr>
-            )}
-          </tbody>
-        </table>
-        <Pagination meta={meta} onPageChange={setPage} />
+      <div className="mobile-list">
+        {loans.map((loan) => (
+          <div key={loan._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <Link to={`/loans/${loan._id}`} className="mobile-list-title link-accent">
+                  {loan.loanId}
+                </Link>
+                <p className="mobile-list-meta mt-0.5">{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Badge status={loan.status} />
+                {loan.status === 'approved' && !loan.tenure && (
+                  <span className="text-xs text-yellow-600">({t('ui.selectTenure')})</span>
+                )}
+              </div>
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.amount')}</label>
+                <span>{formatCurrency(loan.amount)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('ui.rate')}</label>
+                <span>{loan.interestRate}%</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('ui.tenure')}</label>
+                <span>{loan.tenure ? `${loan.tenure}m` : '-'}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('loan.emiAmount')}</label>
+                <span>{formatCurrency(loan.emiAmount)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('ui.remaining')}</label>
+                <span>{formatCurrency(loan.remainingBalance)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.date')}</label>
+                <span>{formatDate(loan.createdAt)}</span>
+              </div>
+            </div>
+            <div className="mobile-list-actions">{loanActions(loan)}</div>
+          </div>
+        ))}
+        {!loans.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('ui.noLoans')}</p>
+        )}
       </div>
+
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('table.loanId')}</th>
+                <th>{t('table.type')}</th>
+                <th className="text-right">{t('table.amount')}</th>
+                <th className="text-right">{t('ui.rate')}</th>
+                <th className="text-right">{t('ui.tenure')}</th>
+                <th className="text-right">{t('loan.emiAmount')}</th>
+                <th className="text-right">{t('ui.remaining')}</th>
+                <th>{t('table.status')}</th>
+                <th>{t('table.date')}</th>
+                <th className="text-right">{t('table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loans.map((loan) => (
+                <tr key={loan._id}>
+                  <td className="font-medium">
+                    <Link to={`/loans/${loan._id}`} className="link-accent">{loan.loanId}</Link>
+                  </td>
+                  <td>{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</td>
+                  <td className="text-right">{formatCurrency(loan.amount)}</td>
+                  <td className="text-right">{loan.interestRate}%</td>
+                  <td className="text-right">{loan.tenure ? `${loan.tenure}m` : '-'}</td>
+                  <td className="text-right">{formatCurrency(loan.emiAmount)}</td>
+                  <td className="text-right">{formatCurrency(loan.remainingBalance)}</td>
+                  <td>
+                    <Badge status={loan.status} />
+                    {loan.status === 'approved' && !loan.tenure && (
+                      <span className="ml-1 text-xs text-yellow-600">({t('ui.selectTenure')})</span>
+                    )}
+                  </td>
+                  <td>{formatDate(loan.createdAt)}</td>
+                  <td className="text-right">
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{loanActions(loan)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!loans.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t('ui.noLoans')}</p>
+        )}
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
 
       <Modal isOpen={showApply} onClose={() => setShowApply(false)} title={t('dash.applyLoan')}>
         <form onSubmit={handleSubmit(onApply)} className="space-y-4">

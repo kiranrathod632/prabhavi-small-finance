@@ -5,7 +5,6 @@ import { HiCash, HiCreditCard, HiDocumentText, HiCurrencyRupee, HiArrowRight } f
 import { dashboardAPI } from '../../services';
 import StatCard from '../../components/StatCard';
 import PageHeader from '../../components/PageHeader';
-import { LineChart, ProgressChart } from '../../components/Charts';
 import { formatCurrency, formatDate, getTransactionTypeLabel } from '../../utils/helpers';
 import { SkeletonCard } from '../../components/LoadingSpinner';
 import Badge from '../../components/Badge';
@@ -34,7 +33,7 @@ const UserDashboard = () => {
     return (
       <div>
         <PageHeader title={t('dashboard')} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       </div>
@@ -50,22 +49,22 @@ const UserDashboard = () => {
     );
   }
 
-  const { cards, upcomingEMI, recentTransactions, charts } = data;
+  const { cards, upcomingEMI, recentTransactions } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title={t('dashboard')}
         subtitle={t('dash.welcome')}
         actions={
-          <Link to="/loans" className="btn-accent text-sm">
+          <Link to="/loans" className="btn-accent text-xs sm:text-sm">
             {t('dash.viewLoans')}
-            <HiArrowRight className="w-4 h-4" />
+            <HiArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </Link>
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 animate-fade-up" style={{ animationDelay: '0.05s' }}>
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4 animate-fade-up" style={{ animationDelay: '0.05s' }}>
         <StatCard title={t('loan.loanAmount')} value={formatCurrency(cards.totalLoan)} icon={HiCash} color="primary" />
         <StatCard title={t('dash.activeLoan')} value={formatCurrency(cards.remainingLoan)} icon={HiCash} color="red" />
         <StatCard title={t('emis')} value={cards.paidEmi} icon={HiCreditCard} color="green" />
@@ -74,40 +73,25 @@ const UserDashboard = () => {
         <StatCard title={t('funds')} value={formatCurrency(cards.walletBalance)} icon={HiCurrencyRupee} color="green" />
       </div>
 
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="card">
-          <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('emis')}</h3>
-          </div>
-          <LineChart data={charts.monthlyEMIPaid} label={t('emis')} color="#0d9488" />
-        </div>
-        <div className="card">
-          <div className="card-header">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('loans')}</h3>
-          </div>
-          <ProgressChart data={charts.loanProgress} />
-        </div>
-      </div> */}
-
       {upcomingEMI && (
         <div className="card border-l-4 border-l-accent-300">
-          <div className="card-header border-0 pb-0 mb-3">
-            <h3 className="font-semibold text-primary-900 dark:text-white">{t('dash.emiDue')}</h3>
+          <div className="card-header border-0 pb-0 mb-2 sm:mb-3">
+            <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('dash.emiDue')}</h3>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-accent-50 to-primary-50 dark:from-accent-900/20 dark:to-primary-900/40">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-accent-50 to-primary-50 dark:from-accent-900/20 dark:to-primary-900/40">
             <div>
-              <p className="font-semibold text-primary-900 dark:text-white">
+              <p className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">
                 EMI #{upcomingEMI.emiNumber} — {upcomingEMI.loan?.loanId}
               </p>
-              <p className="text-sm text-primary-500 mt-1">
+              <p className="text-[11px] sm:text-sm text-primary-500 mt-0.5 sm:mt-1">
                 {t('emi.dueDate')}: {formatDate(upcomingEMI.dueDate)}
               </p>
             </div>
             <div className="sm:text-right flex sm:flex-col items-center sm:items-end justify-between gap-2">
-              <p className="text-xl font-bold text-primary-800 dark:text-accent-300">
+              <p className="text-base sm:text-xl font-bold text-primary-800 dark:text-accent-300">
                 {formatCurrency(upcomingEMI.amount)}
               </p>
-              <Link to="/emis" className="btn-primary text-xs py-1.5 px-3 min-h-0">
+              <Link to="/emis" className="btn-primary text-[10px] sm:text-xs py-1.5 px-3 min-h-0">
                 {t('submit')}
               </Link>
             </div>
@@ -117,8 +101,8 @@ const UserDashboard = () => {
 
       <div className="card">
         <div className="card-header">
-          <h3 className="font-semibold text-primary-900 dark:text-white">{t('transactions')}</h3>
-          <Link to="/transactions" className="text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
+          <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('transactions')}</h3>
+          <Link to="/transactions" className="text-[11px] sm:text-sm font-medium text-primary-600 hover:text-accent-600 dark:text-accent-300">
             {t('dash.viewLoans')}
           </Link>
         </div>
@@ -136,7 +120,7 @@ const UserDashboard = () => {
             <tbody>
               {recentTransactions?.map((txn) => (
                 <tr key={txn._id}>
-                  <td className="font-mono text-xs text-primary-600 dark:text-primary-300">{txn.transactionId}</td>
+                  <td className="font-mono text-[10px] sm:text-xs text-primary-600 dark:text-primary-300">{txn.transactionId}</td>
                   <td>{getTransactionTypeLabel(txn.type)}</td>
                   <td className="text-right font-semibold">{formatCurrency(txn.amount)}</td>
                   <td>{formatDate(txn.createdAt)}</td>
@@ -145,7 +129,7 @@ const UserDashboard = () => {
               ))}
               {!recentTransactions?.length && (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-primary-400">{t('noData')}</td>
+                  <td colSpan={5} className="py-8 sm:py-10 text-center text-primary-400">{t('noData')}</td>
                 </tr>
               )}
             </tbody>

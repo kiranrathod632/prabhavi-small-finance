@@ -1,6 +1,5 @@
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import BrandLogo from '../components/BrandLogo';
 import { useAuth } from '../context/AuthContext';
 import { PageLoader } from '../components/LoadingSpinner';
 import { isAdminPanelRole, getDashboardPath } from '../utils/roles';
@@ -20,26 +19,34 @@ const AdminAuthLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-3 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-hero" />
       <div className="glow-orb w-96 h-96 -top-20 -right-20 bg-violet-600/20" aria-hidden="true" />
       <div className="glow-orb w-72 h-72 bottom-10 -left-16 bg-accent-400/12" aria-hidden="true" />
 
-      <div className="relative w-full max-w-md animate-fade-up">
-        <div className="text-center mb-6 sm:mb-8">
-          <BrandLogo to={null} size="lg" variant="light" stacked className="mx-auto" />
-          <span className="inline-flex mt-4 tag-pill">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-400" />
+      <div className="relative w-full max-w-[340px] sm:max-w-md animate-fade-up">
+        <div className="text-center mb-3 sm:mb-8">
+          <img
+            src="/logo.png"
+            alt="Prabhavi Small Finance"
+            className="w-12 h-12 sm:w-24 sm:h-24 mx-auto rounded-lg sm:rounded-2xl object-contain bg-white p-1 sm:p-2 shadow-glow-sm ring-1 ring-violet-500/30"
+          />
+          <h2 className="mt-2 sm:mt-4 font-display text-[13px] sm:text-2xl font-bold gradient-text">प्रभावी स्मॉल फायनान्स</h2>
+          <p className="text-[10px] sm:text-sm text-slate-400 mt-0.5">Prabhavi Small Finance</p>
+          <span className="inline-flex mt-2 sm:mt-3 tag-pill !text-[10px] sm:!text-xs !px-2 !py-1">
+            <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-accent-400" />
             {isRegisterPage ? t('adminRegister') : t('adminPortal')}
           </span>
         </div>
 
-        <div className="auth-card p-6 sm:p-8 pt-7 sm:pt-8">
+        <div className="auth-card p-3.5 sm:p-8 pt-4 sm:pt-8">
           <Outlet />
         </div>
 
-        <p className="text-center text-slate-500 text-sm mt-5">
+        <p className="text-center text-slate-500 text-[11px] sm:text-sm mt-3 sm:mt-5">
           <Link to="/" className="link-accent">{t('backToHome')}</Link>
+          {' · '}
+          <Link to="/user/login" className="link-accent">{t('userPortal')}</Link>
         </p>
       </div>
     </div>

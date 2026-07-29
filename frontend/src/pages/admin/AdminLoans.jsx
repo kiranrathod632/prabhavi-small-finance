@@ -7,6 +7,7 @@ import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
 import { HiDownload } from 'react-icons/hi';
 import { TENURE_OPTIONS } from '../../utils/roles';
@@ -267,80 +268,141 @@ const AdminLoans = () => {
 
   if (loading && !loans.length) return <PageLoader />;
 
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">{t('adminLoans.title')}</h1>
-        <button onClick={handleExport} className="btn-secondary"><HiDownload className="w-4 h-4 mr-1" /> {t('adminDash.exportExcel')}</button>
-      </div>
+  const loanActions = (loan) => (
+    <>
+      {loan.status === 'pending' && (
+        <>
+          <button type="button" onClick={() => { setActionLoan(loan); setActionType('under_review'); }} className="btn-secondary action-chip">{t('ui.review')}</button>
+          <button type="button" onClick={() => openApprovalModal(loan)} className="btn-success action-chip">{t('loan.approve')}</button>
+          <button type="button" onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger action-chip">{t('loan.reject')}</button>
+        </>
+      )}
+      {loan.status === 'under_review' && (
+        <>
+          <button type="button" onClick={() => openApprovalModal(loan)} className="btn-success action-chip">{t('loan.approve')}</button>
+          <button type="button" onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger action-chip">{t('loan.reject')}</button>
+        </>
+      )}
+      {canCloseLoan(loan) && (
+        <button type="button" onClick={() => { setActionLoan(loan); setActionType('closed'); }} className="btn-secondary action-chip">{t('ui.close')}</button>
+      )}
+    </>
+  );
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('adminLoans.searchPlaceholder')} className="sm:w-64" />
-        <select className="input sm:w-40" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+  return (
+    <div className="page-stack">
+      <PageHeader
+        title={t('adminLoans.title')}
+        actions={
+          <button type="button" onClick={handleExport} className="btn-secondary">
+            <HiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('adminDash.exportExcel')}
+          </button>
+        }
+      />
+
+      <div className="filter-bar">
+        <SearchBar
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder={t('adminLoans.searchPlaceholder')}
+          className="w-full sm:w-64"
+        />
+        <select className="input" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
           {statusOptions.map((s) => (
             <option key={s || 'all'} value={s}>{s ? t(`statusLabel.${s}`) : t('ui.allStatus')}</option>
           ))}
         </select>
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              <th className="text-left py-3 px-2">{t('table.loanId')}</th>
-              <th className="text-left py-3 px-2">{t('table.user')}</th>
-              <th className="text-left py-3 px-2">{t('table.type')}</th>
-              <th className="text-right py-3 px-2">{t('table.amount')}</th>
-              <th className="text-right py-3 px-2">{t('ui.rate')}</th>
-              <th className="text-right py-3 px-2">{t('adminLoans.procFee')}</th>
-              <th className="text-right py-3 px-2">{t('loan.emiAmount')}</th>
-              <th className="text-left py-3 px-2">{t('table.status')}</th>
-              <th className="text-left py-3 px-2">{t('table.date')}</th>
-              <th className="text-right py-3 px-2">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loans.map((loan) => (
-              <tr key={loan._id} className="border-b dark:border-gray-700/50">
-                <td className="py-3 px-2 font-medium">{loan.loanId}</td>
-                <td className="py-3 px-2">{loan.user?.name}</td>
-                <td className="py-3 px-2 capitalize">{loan.loanType}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.amount)}</td>
-                <td className="py-3 px-2 text-right">{loan.interestRate}%</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.processingFee || 0)}</td>
-                <td className="py-3 px-2 text-right">{formatCurrency(loan.emiAmount)}</td>
-                <td className="py-3 px-2"><Badge status={loan.status} /></td>
-                <td className="py-3 px-2">{formatDate(loan.createdAt)}</td>
-                <td className="py-3 px-2 text-right space-x-1">
-                  {loan.status === 'pending' && (
-                    <>
-                      <button onClick={() => { setActionLoan(loan); setActionType('under_review'); }} className="btn-secondary text-xs py-1 px-2">{t('ui.review')}</button>
-                      <button onClick={() => openApprovalModal(loan)} className="btn-success text-xs py-1 px-2">{t('loan.approve')}</button>
-                      <button onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger text-xs py-1 px-2">{t('loan.reject')}</button>
-                    </>
-                  )}
-                  {loan.status === 'under_review' && (
-                    <>
-                      <button onClick={() => openApprovalModal(loan)} className="btn-success text-xs py-1 px-2">{t('loan.approve')}</button>
-                      <button onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger text-xs py-1 px-2">{t('loan.reject')}</button>
-                    </>
-                  )}
-      
-                  {canCloseLoan(loan) && (
-                    <button onClick={() => { setActionLoan(loan); setActionType('closed'); }} className="btn-secondary text-xs py-1 px-2">{t('ui.close')}</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!loans.length && (
-              <tr>
-                <td colSpan={10} className="py-10 text-center text-primary-400">{t('noData')}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <Pagination meta={meta} onPageChange={setPage} />
+      <div className="mobile-list">
+        {loans.map((loan) => (
+          <div key={loan._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <p className="mobile-list-title">{loan.loanId}</p>
+                <p className="mobile-list-meta mt-0.5">{loan.user?.name}</p>
+              </div>
+              <Badge status={loan.status} />
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.type')}</label>
+                <span className="capitalize">{loan.loanType}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.amount')}</label>
+                <span>{formatCurrency(loan.amount)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('ui.rate')}</label>
+                <span>{loan.interestRate}%</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('loan.emiAmount')}</label>
+                <span>{formatCurrency(loan.emiAmount)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('adminLoans.procFee')}</label>
+                <span>{formatCurrency(loan.processingFee || 0)}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('table.date')}</label>
+                <span>{formatDate(loan.createdAt)}</span>
+              </div>
+            </div>
+            <div className="mobile-list-actions">{loanActions(loan)}</div>
+          </div>
+        ))}
+        {!loans.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
+        )}
       </div>
+
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('table.loanId')}</th>
+                <th>{t('table.user')}</th>
+                <th>{t('table.type')}</th>
+                <th className="text-right">{t('table.amount')}</th>
+                <th className="text-right">{t('ui.rate')}</th>
+                <th className="text-right">{t('adminLoans.procFee')}</th>
+                <th className="text-right">{t('loan.emiAmount')}</th>
+                <th>{t('table.status')}</th>
+                <th>{t('table.date')}</th>
+                <th className="text-right">{t('table.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loans.map((loan) => (
+                <tr key={loan._id}>
+                  <td className="font-medium">{loan.loanId}</td>
+                  <td>{loan.user?.name}</td>
+                  <td className="capitalize">{loan.loanType}</td>
+                  <td className="text-right">{formatCurrency(loan.amount)}</td>
+                  <td className="text-right">{loan.interestRate}%</td>
+                  <td className="text-right">{formatCurrency(loan.processingFee || 0)}</td>
+                  <td className="text-right">{formatCurrency(loan.emiAmount)}</td>
+                  <td><Badge status={loan.status} /></td>
+                  <td>{formatDate(loan.createdAt)}</td>
+                  <td className="text-right">
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{loanActions(loan)}</div>
+                  </td>
+                </tr>
+              ))}
+              {!loans.length && (
+                <tr>
+                  <td colSpan={10} className="!whitespace-normal py-10 text-center text-slate-500">{t('noData')}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Pagination meta={meta} onPageChange={setPage} />
 
       <Modal 
         isOpen={!!actionLoan && actionType === 'approved'} 

@@ -6,6 +6,7 @@ import adminPanelAPI from '../../services/adminPanelAPI';
 import { getErrorMessage, formatDate, formatCurrency } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
+import PageHeader from '../../components/PageHeader';
 
 /**
  * Super Admin only — create Admins (e.g. Kiran).
@@ -100,67 +101,119 @@ const ManageAdmins = () => {
 
   const joinedUsers = viewAdmin?.joinedUsers || [];
 
+  const adminActions = (admin) => (
+    <>
+      <button type="button" onClick={() => openEdit(admin)} className="btn-secondary action-chip">{t('update')}</button>
+      <button type="button" onClick={() => toggleActive(admin)} className="btn-secondary action-chip">
+        {admin.isActive ? t('ui.deactivate') : t('ui.activate')}
+      </button>
+    </>
+  );
+
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('manageAdmins.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('manageAdmins.hint') || 'Create Admins like Kiran. They create Users under them.'}
-          </p>
-        </div>
-        <button onClick={openCreate} className="btn-primary">{t('manageAdmins.createAdmin')}</button>
+    <div className="page-stack">
+      <PageHeader
+        title={t('manageAdmins.title')}
+        subtitle={t('manageAdmins.hint') || 'Create Admins like Kiran. They create Users under them.'}
+        actions={
+          <button type="button" onClick={openCreate} className="btn-primary">{t('manageAdmins.createAdmin')}</button>
+        }
+      />
+
+      <div className="mobile-list">
+        {admins.map((admin) => (
+          <div key={admin._id} className="mobile-list-item">
+            <div className="mobile-list-head">
+              <div className="min-w-0">
+                <p className="mobile-list-title">{admin.name}</p>
+                <p className="mobile-list-meta mt-0.5">{admin.email}</p>
+              </div>
+              <span className={`badge ${admin.isActive ? 'badge-green' : 'badge-red'}`}>
+                {admin.isActive ? t('ui.active') : t('ui.inactive')}
+              </span>
+            </div>
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('table.mobile')}</label>
+                <span>{admin.mobile || '-'}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('manageAdmins.joinedUsers')}</label>
+                <span className="flex items-center gap-2">
+                  {admin.joinedUsersCount || 0}
+                  <button
+                    type="button"
+                    onClick={() => openViewUsers(admin)}
+                    className="p-1 rounded-lg text-primary-700 hover:bg-primary-50 dark:text-accent-300 dark:hover:bg-gray-700"
+                    title={t('manageAdmins.viewUsersList')}
+                  >
+                    <HiEye className="w-4 h-4" />
+                  </button>
+                </span>
+              </div>
+              <div className="mobile-list-field col-span-2">
+                <label>{t('table.created')}</label>
+                <span>{formatDate(admin.createdAt)}</span>
+              </div>
+            </div>
+            <div className="mobile-list-actions">{adminActions(admin)}</div>
+          </div>
+        ))}
+        {!admins.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t('manageAdmins.noAdmins')}</p>
+        )}
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700 text-left">
-              <th className="p-3">{t('table.name')}</th>
-              <th className="p-3">{t('table.email')}</th>
-              <th className="p-3">{t('table.mobile')}</th>
-              <th className="p-3">{t('manageAdmins.joinedUsers')}</th>
-              <th className="p-3">{t('table.status')}</th>
-              <th className="p-3">{t('table.created')}</th>
-              <th className="p-3">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {admins.map((admin) => (
-              <tr key={admin._id} className="border-b dark:border-gray-700">
-                <td className="p-3">{admin.name}</td>
-                <td className="p-3">{admin.email}</td>
-                <td className="p-3">{admin.mobile || '-'}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{admin.joinedUsersCount || 0}</span>
-                    <button
-                      type="button"
-                      onClick={() => openViewUsers(admin)}
-                      className="p-1.5 rounded-lg text-primary-700 hover:bg-primary-50 dark:text-accent-300 dark:hover:bg-gray-700"
-                      title={t('manageAdmins.viewUsersList')}
-                    >
-                      <HiEye className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-                <td className="p-3">
-                  <span className={`badge ${admin.isActive ? 'badge-green' : 'badge-red'}`}>
-                    {admin.isActive ? t('ui.active') : t('ui.inactive')}
-                  </span>
-                </td>
-                <td className="p-3">{formatDate(admin.createdAt)}</td>
-                <td className="p-3 space-x-2">
-                  <button onClick={() => openEdit(admin)} className="btn-secondary text-xs">{t('update')}</button>
-                  <button onClick={() => toggleActive(admin)} className="btn-secondary text-xs">
-                    {admin.isActive ? t('ui.deactivate') : t('ui.activate')}
-                  </button>
-                </td>
+      <div className="card desktop-table">
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('table.name')}</th>
+                <th>{t('table.email')}</th>
+                <th>{t('table.mobile')}</th>
+                <th>{t('manageAdmins.joinedUsers')}</th>
+                <th>{t('table.status')}</th>
+                <th>{t('table.created')}</th>
+                <th className="text-right">{t('table.actions')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {!admins.length && <p className="p-4 text-gray-500 text-center">{t('manageAdmins.noAdmins')}</p>}
+            </thead>
+            <tbody>
+              {admins.map((admin) => (
+                <tr key={admin._id}>
+                  <td>{admin.name}</td>
+                  <td>{admin.email}</td>
+                  <td>{admin.mobile || '-'}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{admin.joinedUsersCount || 0}</span>
+                      <button
+                        type="button"
+                        onClick={() => openViewUsers(admin)}
+                        className="p-1.5 rounded-lg text-primary-700 hover:bg-primary-50 dark:text-accent-300 dark:hover:bg-gray-700"
+                        title={t('manageAdmins.viewUsersList')}
+                      >
+                        <HiEye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`badge ${admin.isActive ? 'badge-green' : 'badge-red'}`}>
+                      {admin.isActive ? t('ui.active') : t('ui.inactive')}
+                    </span>
+                  </td>
+                  <td>{formatDate(admin.createdAt)}</td>
+                  <td className="text-right">
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{adminActions(admin)}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!admins.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t('manageAdmins.noAdmins')}</p>
+        )}
       </div>
 
       <Modal
@@ -186,33 +239,33 @@ const ManageAdmins = () => {
         size="xl"
       >
         {joinedUsers.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="data-table-wrap">
+            <table className="data-table">
               <thead>
-                <tr className="border-b dark:border-gray-700 text-left">
-                  <th className="py-2 pr-3">{t('table.name')}</th>
-                  <th className="py-2 pr-3">{t('table.mobile')}</th>
-                  <th className="py-2 pr-3">{t('manageAdmins.totalEMIs')}</th>
-                  <th className="py-2 pr-3">{t('manageAdmins.pendingEMIs')}</th>
-                  <th className="py-2 pr-3 text-right">{t('manageAdmins.totalEmiAmount')}</th>
-                  <th className="py-2 pr-3 text-right">{t('manageAdmins.pendingEmiAmount')}</th>
-                  <th className="py-2 pr-3">{t('manageAdmins.totalLoans')}</th>
-                  <th className="py-2 pr-3 text-right">{t('manageAdmins.loanAmount')}</th>
+                <tr>
+                  <th>{t('table.name')}</th>
+                  <th>{t('table.mobile')}</th>
+                  <th>{t('manageAdmins.totalEMIs')}</th>
+                  <th>{t('manageAdmins.pendingEMIs')}</th>
+                  <th className="text-right">{t('manageAdmins.totalEmiAmount')}</th>
+                  <th className="text-right">{t('manageAdmins.pendingEmiAmount')}</th>
+                  <th>{t('manageAdmins.totalLoans')}</th>
+                  <th className="text-right">{t('manageAdmins.loanAmount')}</th>
                 </tr>
               </thead>
               <tbody>
                 {joinedUsers.map((user) => {
                   const summary = user.summary || {};
                   return (
-                    <tr key={user._id} className="border-b dark:border-gray-700/50">
-                      <td className="py-2 pr-3 font-medium">{user.name}</td>
-                      <td className="py-2 pr-3">{user.mobile_number || '-'}</td>
-                      <td className="py-2 pr-3">{summary.totalEMIs || 0}</td>
-                      <td className="py-2 pr-3">{summary.pendingEMIs || 0}</td>
-                      <td className="py-2 pr-3 text-right">{formatCurrency(summary.totalEmiAmount || 0)}</td>
-                      <td className="py-2 pr-3 text-right">{formatCurrency(summary.pendingEmiAmount || 0)}</td>
-                      <td className="py-2 pr-3">{summary.totalLoans || 0}</td>
-                      <td className="py-2 pr-3 text-right">{formatCurrency(summary.totalLoanAmount || 0)}</td>
+                    <tr key={user._id}>
+                      <td className="font-medium">{user.name}</td>
+                      <td>{user.mobile_number || '-'}</td>
+                      <td>{summary.totalEMIs || 0}</td>
+                      <td>{summary.pendingEMIs || 0}</td>
+                      <td className="text-right">{formatCurrency(summary.totalEmiAmount || 0)}</td>
+                      <td className="text-right">{formatCurrency(summary.pendingEmiAmount || 0)}</td>
+                      <td>{summary.totalLoans || 0}</td>
+                      <td className="text-right">{formatCurrency(summary.totalLoanAmount || 0)}</td>
                     </tr>
                   );
                 })}

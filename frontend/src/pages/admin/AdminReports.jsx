@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { dashboardAPI } from '../../services';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { downloadBlob } from '../../utils/helpers';
+import PageHeader from '../../components/PageHeader';
 
 const AdminReports = () => {
   const { t } = useTranslation();
@@ -60,49 +61,72 @@ const AdminReports = () => {
 
     const headers = Object.keys(data[0]).filter((k) => !k.startsWith('_') && k !== '__v');
 
+    const formatCell = (h, row) => {
+      if (typeof row[h] === 'object') return row[h]?.name || row[h]?.loanId || '-';
+      if (h.includes('amount') || h.includes('Balance') || h.includes('Fund')) return formatCurrency(row[h]);
+      if (h.includes('Date') || h.includes('At')) return formatDate(row[h]);
+      return String(row[h] ?? '-');
+    };
+
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700">
-              {headers.map((h) => (
-                <th key={h} className="text-left py-2 px-2 capitalize">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.slice(0, 50).map((row, i) => (
-              <tr key={i} className="border-b dark:border-gray-700/50">
+      <>
+        <div className="mobile-list">
+          {data.slice(0, 50).map((row, i) => (
+            <div key={i} className="mobile-list-item">
+              <div className="mobile-list-grid">
                 {headers.map((h) => (
-                  <td key={h} className="py-2 px-2">
-                    {typeof row[h] === 'object' ? (row[h]?.name || row[h]?.loanId || '-') :
-                      h.includes('amount') || h.includes('Balance') || h.includes('Fund') ? formatCurrency(row[h]) :
-                      h.includes('Date') || h.includes('At') ? formatDate(row[h]) :
-                      String(row[h] ?? '-')}
-                  </td>
+                  <div key={h} className="mobile-list-field">
+                    <label className="capitalize">{h}</label>
+                    <span>{formatCell(h, row)}</span>
+                  </div>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="desktop-table">
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  {headers.map((h) => (
+                    <th key={h} className="capitalize">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.slice(0, 50).map((row, i) => (
+                  <tr key={i}>
+                    {headers.map((h) => (
+                      <td key={h}>{formatCell(h, row)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {data.length > 50 && <p className="text-sm text-gray-500 mt-2">{t('ui.showingRecords', { count: data.length })}</p>}
-      </div>
+      </>
     );
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">{t('adminReports.title')}</h1>
+    <div className="page-stack">
+      <PageHeader title={t('adminReports.title')} />
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="filter-bar">
         <input type="date" className="input sm:w-40" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         <input type="date" className="input sm:w-40" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto">
+      <div className="flex gap-2 overflow-x-auto">
         {reportTypes.map((r) => (
           <button
             key={r.id}
+            type="button"
             onClick={() => fetchReport(r.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
               activeReport === r.id ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700'
