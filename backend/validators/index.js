@@ -495,9 +495,11 @@ export const paginationValidator = [
 ];
 
 export const dateFilterValidator = [
-  query('filter').optional().isIn(['today', 'week', 'month', 'custom']),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
+  query('filter')
+    .optional({ values: 'falsy' })
+    .isIn(['today', 'week', 'month', 'custom']),
+  query('startDate').optional({ values: 'falsy' }).isISO8601(),
+  query('endDate').optional({ values: 'falsy' }).isISO8601(),
 ];
 
 // Export helper functions for use in controllers

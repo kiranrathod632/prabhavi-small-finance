@@ -16,15 +16,15 @@ const SIZES = {
   },
   lg: {
     img: 'w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20',
-    title: 'text-lg sm:text-2xl md:text-3xl',
-    shortTitle: 'text-xl font-bold',
+    title: 'text-base sm:text-2xl md:text-3xl',
+    shortTitle: 'text-lg sm:text-xl font-bold',
     subtitle: 'text-xs sm:text-sm',
   },
   xl: {
-    img: 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28',
-    title: 'text-xl sm:text-3xl md:text-4xl lg:text-5xl',
-    shortTitle: 'text-2xl sm:text-3xl font-bold',
-    subtitle: 'text-sm sm:text-base',
+    img: 'w-[4.5rem] h-[4.5rem] sm:w-24 sm:h-24 md:w-28 md:h-28',
+    title: 'text-[1.15rem] sm:text-3xl md:text-4xl lg:text-5xl',
+    shortTitle: 'text-xl sm:text-3xl font-bold',
+    subtitle: 'text-[13px] sm:text-base',
   },
 };
 
@@ -57,19 +57,19 @@ const BrandLogo = ({
       />
       {showAppName && (
         <span className={`min-w-0 leading-tight ${stacked ? 'text-center mt-2 sm:mt-3 max-w-xs sm:max-w-md' : 'text-left flex-1'}`}>
-          {/* Mobile / narrow: PSF */}
+          {/* Mobile / narrow: short name — unless stacked hero (show full name) */}
           <span
             className={`font-display tracking-tight ${s.shortTitle} ${titleClass} ${
-              forceShort ? 'block' : 'block md:hidden'
+              forceShort ? 'block' : stacked ? 'hidden' : 'block md:hidden'
             }`}
           >
             {t('appShortName')}
           </span>
-          {/* Desktop: full company name */}
+          {/* Full company name */}
           {!forceShort && (
             <span
-              className={`font-display font-semibold tracking-tight ${s.title} ${titleClass} hidden md:block ${
-                stacked ? 'text-balance' : 'truncate'
+              className={`font-display font-semibold tracking-tight ${s.title} ${titleClass} ${
+                stacked ? 'block text-balance' : 'hidden md:block truncate'
               }`}
             >
               {t('appName')}

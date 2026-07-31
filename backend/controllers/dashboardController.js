@@ -4,6 +4,7 @@ import EMI from '../models/EMI.js';
 import Transaction from '../models/Transaction.js';
 import Fund from '../models/Fund.js';
 import AuditLog from '../models/AuditLog.js';
+import Purchase from '../models/Purchase.js';
 import { asyncHandler, sendResponse, sendError } from '../utils/apiResponse.js';
 import { ROLES } from '../config/permissions.js';
 
@@ -210,6 +211,36 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     getMonthlyData(EMI, monthlyEmiMatch, 'principal'),
   ]);
 
+  const purchaseMatch = isAdmin ? { requestedBy: adminId } : {};
+  const [approvedPurchases, pendingPurchaseAgg, pendingPurchases, adminList] = await Promise.all([
+    Purchase.aggregate([
+      { $match: { ...purchaseMatch, status: 'approved' } },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]),
+    Purchase.aggregate([
+      { $match: { ...purchaseMatch, status: 'pending' } },
+      { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]),
+    Purchase.find({ status: 'pending', ...(isAdmin ? { requestedBy: adminId } : {}) })
+      .populate('requestedBy', 'name email firstName lastName')
+      .sort('-createdAt')
+      .limit(8),
+    !isAdmin
+      ? User.find({ role: ROLES.ADMIN, isDeleted: { $ne: true } })
+          .select('name email mobile firstName lastName isActive createdAt')
+          .sort('name')
+          .limit(20)
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  const purchaseStats = {
+    approvedTotal: approvedPurchases[0]?.total || 0,
+    approvedCount: approvedPurchases[0]?.count || 0,
+    pendingTotal: pendingPurchaseAgg[0]?.total || 0,
+    pendingCount: pendingPurchaseAgg[0]?.count || 0,
+  };
+
   sendResponse(res, 200, 'Admin dashboard data', {
     cards: {
       totalUsers,
@@ -268,6 +299,10 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
       cashInHand: fund?.cashInHand || 0,
       bankBalance: fund?.bankBalance || 0,
       totalTransactions,
+      purchaseApprovedTotal: purchaseStats.approvedTotal,
+      purchaseApprovedCount: purchaseStats.approvedCount,
+      purchasePendingTotal: purchaseStats.pendingTotal,
+      purchasePendingCount: purchaseStats.pendingCount,
     },
     charts: {
       monthlyLoans,
@@ -277,6 +312,8 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     },
     recentTransactions,
     recentAuditLogs,
+    admins: adminList,
+    pendingPurchases,
   });
 });
 

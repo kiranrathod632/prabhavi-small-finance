@@ -239,39 +239,82 @@ const ManageAdmins = () => {
         size="xl"
       >
         {joinedUsers.length ? (
-          <div className="data-table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t('table.name')}</th>
-                  <th>{t('table.mobile')}</th>
-                  <th>{t('manageAdmins.totalEMIs')}</th>
-                  <th>{t('manageAdmins.pendingEMIs')}</th>
-                  <th className="text-right">{t('manageAdmins.totalEmiAmount')}</th>
-                  <th className="text-right">{t('manageAdmins.pendingEmiAmount')}</th>
-                  <th>{t('manageAdmins.totalLoans')}</th>
-                  <th className="text-right">{t('manageAdmins.loanAmount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {joinedUsers.map((user) => {
-                  const summary = user.summary || {};
-                  return (
-                    <tr key={user._id}>
-                      <td className="font-medium">{user.name}</td>
-                      <td>{user.mobile_number || '-'}</td>
-                      <td>{summary.totalEMIs || 0}</td>
-                      <td>{summary.pendingEMIs || 0}</td>
-                      <td className="text-right">{formatCurrency(summary.totalEmiAmount || 0)}</td>
-                      <td className="text-right">{formatCurrency(summary.pendingEmiAmount || 0)}</td>
-                      <td>{summary.totalLoans || 0}</td>
-                      <td className="text-right">{formatCurrency(summary.totalLoanAmount || 0)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="mobile-list">
+              {joinedUsers.map((user) => {
+                const summary = user.summary || {};
+                return (
+                  <div key={user._id} className="mobile-list-item">
+                    <div className="mobile-list-head">
+                      <div className="min-w-0">
+                        <p className="mobile-list-title">{user.name}</p>
+                        <p className="mobile-list-meta">{user.mobile_number || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="mobile-list-grid">
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.totalEMIs')}</label>
+                        <span>{summary.totalEMIs || 0}</span>
+                      </div>
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.pendingEMIs')}</label>
+                        <span>{summary.pendingEMIs || 0}</span>
+                      </div>
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.totalEmiAmount')}</label>
+                        <span>{formatCurrency(summary.totalEmiAmount || 0)}</span>
+                      </div>
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.pendingEmiAmount')}</label>
+                        <span>{formatCurrency(summary.pendingEmiAmount || 0)}</span>
+                      </div>
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.totalLoans')}</label>
+                        <span>{summary.totalLoans || 0}</span>
+                      </div>
+                      <div className="mobile-list-field">
+                        <label>{t('manageAdmins.loanAmount')}</label>
+                        <span>{formatCurrency(summary.totalLoanAmount || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="data-table-wrap hidden md:block">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{t('table.name')}</th>
+                    <th>{t('table.mobile')}</th>
+                    <th>{t('manageAdmins.totalEMIs')}</th>
+                    <th>{t('manageAdmins.pendingEMIs')}</th>
+                    <th className="text-right">{t('manageAdmins.totalEmiAmount')}</th>
+                    <th className="text-right">{t('manageAdmins.pendingEmiAmount')}</th>
+                    <th>{t('manageAdmins.totalLoans')}</th>
+                    <th className="text-right">{t('manageAdmins.loanAmount')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {joinedUsers.map((user) => {
+                    const summary = user.summary || {};
+                    return (
+                      <tr key={user._id}>
+                        <td className="font-medium">{user.name}</td>
+                        <td>{user.mobile_number || '-'}</td>
+                        <td>{summary.totalEMIs || 0}</td>
+                        <td>{summary.pendingEMIs || 0}</td>
+                        <td className="text-right">{formatCurrency(summary.totalEmiAmount || 0)}</td>
+                        <td className="text-right">{formatCurrency(summary.pendingEmiAmount || 0)}</td>
+                        <td>{summary.totalLoans || 0}</td>
+                        <td className="text-right">{formatCurrency(summary.totalLoanAmount || 0)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <p className="text-sm text-gray-500 text-center py-6">{t('manageAdmins.noJoinedUsers')}</p>
         )}

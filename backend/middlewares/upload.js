@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Ensure upload directories exist
-const uploadDirs = ['profiles', 'documents', 'receipts'];
+const uploadDirs = ['profiles', 'documents', 'receipts', 'bills'];
 uploadDirs.forEach((dir) => {
   const dirPath = path.join(__dirname, '..', 'uploads', dir);
   if (!fs.existsSync(dirPath)) {
@@ -20,6 +20,8 @@ const storage = multer.diskStorage({
     let folder = 'documents';
     if (file.fieldname === 'avatar' || file.fieldname === 'profilePicture') {
       folder = 'profiles';
+    } else if (file.fieldname === 'billPhoto' || file.fieldname === 'bill') {
+      folder = 'bills';
     }
     cb(null, path.join(__dirname, '..', 'uploads', folder));
   },

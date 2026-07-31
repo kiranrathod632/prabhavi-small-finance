@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/helpers';
 import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
 import LanguageSelector from '../../components/LanguageSelector';
+import PageHeader from '../../components/PageHeader';
 
 const Profile = () => {
   const { user, fetchUser, updateLanguage } = useAuth();
@@ -108,19 +109,19 @@ const Profile = () => {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{t('profile')}</h1>
-          <p className="page-subtitle">{t('tagline')}</p>
-        </div>
-        <div>
-          <p className="text-[10px] sm:text-xs text-slate-500 mb-1">{t('selectLanguage')}</p>
-          <LanguageSelector className="w-28 sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} />
-        </div>
-      </div>
+    <div className="page-stack max-w-5xl mx-auto">
+      <PageHeader
+        title={t('profile')}
+        subtitle={t('tagline')}
+        actions={
+          <div className="w-full sm:w-auto">
+            <p className="text-[10px] sm:text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('selectLanguage')}</p>
+            <LanguageSelector className="w-full sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} />
+          </div>
+        }
+      />
 
-      <div className="profile-hero mb-4 sm:mb-6">
+      <div className="profile-hero">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3.5 sm:gap-5">
           <div className="relative shrink-0 self-start">
             <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full p-0.5 sm:p-1 bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 shadow-glow-sm">
@@ -139,11 +140,11 @@ const Profile = () => {
           </div>
 
           <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] sm:tracking-[0.18em] text-violet-300 mb-0.5 sm:mb-1">
+            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] sm:tracking-[0.18em] text-violet-600 dark:text-violet-300 mb-0.5 sm:mb-1">
               {t('personalInfo')}
             </p>
-            <h2 className="text-lg sm:text-3xl font-bold text-white truncate">{displayName}</h2>
-            <p className="text-[12px] sm:text-base text-slate-400 mt-0.5 sm:mt-1 truncate">{user?.email || user?.mobile_number}</p>
+            <h2 className="text-lg sm:text-3xl font-bold truncate" style={{ color: 'var(--text-primary)' }}>{displayName}</h2>
+            <p className="text-[12px] sm:text-base mt-0.5 sm:mt-1 truncate" style={{ color: 'var(--text-muted)' }}>{user?.email || user?.mobile_number}</p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
               {user?.firstName && (
                 <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('firstName')}: {user.firstName}</span>

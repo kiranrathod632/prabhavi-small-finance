@@ -122,14 +122,14 @@ const AdminReports = () => {
         <input type="date" className="input sm:w-40" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-2 overflow-x-auto pb-0.5">
         {reportTypes.map((r) => (
           <button
             key={r.id}
             type="button"
             onClick={() => fetchReport(r.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-              activeReport === r.id ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700'
+            className={`action-chip whitespace-nowrap ${
+              activeReport === r.id ? 'btn-primary' : 'btn-secondary'
             }`}
           >
             {r.label}

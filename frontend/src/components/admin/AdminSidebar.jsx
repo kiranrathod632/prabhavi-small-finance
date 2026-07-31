@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   HiHome, HiUsers, HiCash, HiCreditCard, HiDocumentText,
   HiCurrencyRupee, HiChartBar, HiBell, HiLogout,
-  HiShieldCheck, HiCog, HiX,
+  HiShieldCheck, HiCog, HiX, HiShoppingCart,
 } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo from '../BrandLogo';
@@ -27,6 +27,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     { to: `${base}/emis`, label: t('emis'), icon: HiCreditCard, perm: 'emis.view' },
     { to: `${base}/transactions`, label: t('transactions'), icon: HiDocumentText, perm: 'transactions.view' },
     { to: `${base}/funds`, label: t('funds'), icon: HiCurrencyRupee, perm: 'funds.view' },
+    { to: `${base}/purchases`, label: t('adminPurchases.nav') || 'Purchases', icon: HiShoppingCart, perm: 'funds.view' },
     { to: `${base}/commissions`, label: t('commission.title') || 'Commission', icon: HiChartBar, perm: 'commission.view' },
     { to: `${base}/reports`, label: t('reports'), icon: HiChartBar, perm: 'reports.view' },
     { to: `${base}/notifications`, label: t('notifications'), icon: HiBell, perm: null },
@@ -51,10 +52,9 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 flex flex-col text-white border-r border-accent-400/10 backdrop-blur-xl transform transition-transform duration-250 ease-out lg:translate-x-0 ${
+        className={`sidebar-panel fixed top-0 left-0 z-50 h-full w-64 flex flex-col border-r backdrop-blur-xl transform transition-transform duration-250 ease-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ background: 'rgba(5, 10, 23, 0.95)' }}
       >
         <div className="p-3 sm:p-5 border-b border-accent-400/10 flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -68,7 +68,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-primary-800 text-primary-400"
+            className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-primary-800 text-slate-500 dark:text-primary-400"
             aria-label="Close menu"
           >
             <HiX className="w-4 h-4" />
@@ -93,11 +93,11 @@ const AdminSidebar = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        <div className="p-2 sm:p-3 border-t border-accent-400/10">
+        <div className="p-2 sm:p-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           <button
             type="button"
             onClick={logout}
-            className="nav-link w-full text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className="nav-link w-full text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-500"
           >
             <HiLogout className="w-4 h-4 sm:w-5 sm:h-5" />
             {t('logout')}

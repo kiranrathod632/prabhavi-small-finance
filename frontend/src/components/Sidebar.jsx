@@ -69,17 +69,16 @@ const Sidebar = ({ isOpen, onClose }) => {
         />
       )}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 flex flex-col text-white shadow-soft transform transition-transform duration-250 ease-out lg:translate-x-0 border-r border-accent-400/10 backdrop-blur-xl ${
+        className={`sidebar-panel fixed top-0 left-0 z-50 h-full w-64 flex flex-col shadow-soft transform transition-transform duration-250 ease-out lg:translate-x-0 border-r backdrop-blur-xl ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ background: 'rgba(5, 10, 23, 0.92)' }}
       >
         <div className="p-3 sm:p-5 border-b border-accent-400/10 flex items-start justify-between gap-2">
-          <BrandLogo size="sm" variant="dark" forceShort onClick={onClose} />
+          <BrandLogo size="sm" variant="light" forceShort onClick={onClose} />
           <button
             type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-primary-300"
+            className="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-primary-300"
             aria-label="Close menu"
           >
             <HiX className="w-4 h-4" />
@@ -100,11 +99,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        <div className="p-2 sm:p-3 border-t border-accent-400/10">
+        <div className="p-2 sm:p-3 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
           <button
             type="button"
             onClick={logout}
-            className="nav-link w-full text-red-300 hover:bg-red-500/15 hover:text-red-200"
+            className="nav-link w-full text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:text-red-500"
           >
             <HiLogout className="w-4 h-4 sm:w-5 sm:h-5" />
             {t('logout')}

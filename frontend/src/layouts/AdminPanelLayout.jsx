@@ -28,7 +28,7 @@ const AdminPanelLayout = ({ allowedRoles = ADMIN_PANEL_ROLES }) => {
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:ml-64 min-h-screen flex flex-col transition-[margin] duration-200">
         <AdminNavbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-2 sm:p-5 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>

@@ -23,6 +23,10 @@ import {
 } from '../controllers/adminController.js';
 import { updateFund, getFunds } from '../controllers/fundController.js';
 import {
+  getPurchases, createPurchase, approvePurchase, rejectPurchase, getPurchaseSummary,
+} from '../controllers/purchaseController.js';
+import { uploadSingle } from '../middlewares/upload.js';
+import {
   getNotifications, markAsRead, markAllAsRead,
 } from '../controllers/notificationController.js';
 import {
@@ -70,8 +74,6 @@ router.post('/emis/:id/collect', mongoIdValidator, validate, requirePermission(P
 router.post('/emis/:id/partial-pay', mongoIdValidator, validate, requirePermission(PERMISSIONS.EMIS_MANAGE), adminPartialPayEMI);
 router.put('/emis/:id/penalty', mongoIdValidator, requirePermission(PERMISSIONS.EMIS_MANAGE), adminAddPenalty);
 
-
-
 // Commission — Admin earns on loans under them; can set commission %
 router.get('/commissions', requirePermission(PERMISSIONS.COMMISSION_VIEW), listCommissions);
 router.put('/commission-rate', authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN), updateCommissionRate);
@@ -89,6 +91,30 @@ router.put('/manage/users/:userId/assign', authorize(ROLES.SUPER_ADMIN), assignU
 // Funds
 router.get('/funds', requirePermission(PERMISSIONS.FUNDS_VIEW), getFunds);
 router.post('/funds', requirePermission(PERMISSIONS.FUNDS_MANAGE), updateFund);
+
+// Purchases / expenses — Admin requests; Super Admin approves then fund deducts
+router.get('/purchases/summary', requirePermission(PERMISSIONS.FUNDS_VIEW), getPurchaseSummary);
+router.get('/purchases', paginationValidator, validate, requirePermission(PERMISSIONS.FUNDS_VIEW), getPurchases);
+router.post(
+  '/purchases',
+  requirePermission(PERMISSIONS.FUNDS_MANAGE),
+  uploadSingle('billPhoto'),
+  createPurchase
+);
+router.put(
+  '/purchases/:id/approve',
+  mongoIdValidator,
+  validate,
+  authorize(ROLES.SUPER_ADMIN),
+  approvePurchase
+);
+router.put(
+  '/purchases/:id/reject',
+  mongoIdValidator,
+  validate,
+  authorize(ROLES.SUPER_ADMIN),
+  rejectPurchase
+);
 
 // Notifications
 router.get('/notifications', getNotifications);

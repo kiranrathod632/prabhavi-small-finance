@@ -19,21 +19,21 @@ const AdminAuthLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a] flex items-center justify-center p-3 sm:p-6 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-hero" />
-      <div className="glow-orb w-96 h-96 -top-20 -right-20 bg-violet-600/20" aria-hidden="true" />
-      <div className="glow-orb w-72 h-72 bottom-10 -left-16 bg-accent-400/12" aria-hidden="true" />
+    <div className="min-h-screen panel-shell flex items-center justify-center p-3 sm:p-6 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-hero opacity-60 dark:opacity-100" />
+      <div className="glow-orb w-96 h-96 -top-20 -right-20 bg-violet-600/15 dark:bg-violet-600/20" aria-hidden="true" />
+      <div className="glow-orb w-72 h-72 bottom-10 -left-16 bg-accent-400/10 dark:bg-accent-400/12" aria-hidden="true" />
 
-      <div className="relative w-full max-w-[340px] sm:max-w-md animate-fade-up">
-        <div className="text-center mb-3 sm:mb-8">
+      <div className="relative w-full max-w-[320px] sm:max-w-md animate-fade-up">
+        <div className="text-center mb-2.5 sm:mb-6">
           <img
             src="/logo.png"
             alt="Prabhavi Small Finance"
-            className="w-12 h-12 sm:w-24 sm:h-24 mx-auto rounded-lg sm:rounded-2xl object-contain bg-white p-1 sm:p-2 shadow-glow-sm ring-1 ring-violet-500/30"
+            className="w-11 h-11 sm:w-20 sm:h-20 mx-auto rounded-lg sm:rounded-2xl object-contain bg-white p-1 sm:p-2 shadow-glow-sm ring-1 ring-violet-500/30"
           />
-          <h2 className="mt-2 sm:mt-4 font-display text-[13px] sm:text-2xl font-bold gradient-text">प्रभावी स्मॉल फायनान्स</h2>
-          <p className="text-[10px] sm:text-sm text-slate-400 mt-0.5">Prabhavi Small Finance</p>
-          <span className="inline-flex mt-2 sm:mt-3 tag-pill !text-[10px] sm:!text-xs !px-2 !py-1">
+          <h2 className="mt-2 sm:mt-3 font-display text-[12px] sm:text-xl font-bold gradient-text">प्रभावी स्मॉल फायनान्स</h2>
+          <p className="text-[10px] sm:text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Prabhavi Small Finance</p>
+          <span className="inline-flex mt-2 sm:mt-3 tag-pill !text-[9px] sm:!text-xs !px-2 !py-1">
             <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-accent-400" />
             {isRegisterPage ? t('adminRegister') : t('adminPortal')}
           </span>
@@ -43,7 +43,7 @@ const AdminAuthLayout = () => {
           <Outlet />
         </div>
 
-        <p className="text-center text-slate-500 text-[11px] sm:text-sm mt-3 sm:mt-5">
+        <p className="text-center text-[10px] sm:text-xs mt-2.5 sm:mt-4" style={{ color: 'var(--text-muted)' }}>
           <Link to="/" className="link-accent">{t('backToHome')}</Link>
           {' · '}
           <Link to="/user/login" className="link-accent">{t('userPortal')}</Link>

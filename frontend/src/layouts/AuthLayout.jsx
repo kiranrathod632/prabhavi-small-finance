@@ -21,12 +21,12 @@ const AuthLayout = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-[#05070a] relative overflow-x-hidden">
-      <div className="glow-orb w-[20rem] h-[20rem] -top-20 -left-16 bg-violet-600/35 lg:w-[28rem] lg:h-[28rem]" aria-hidden="true" />
-      <div className="glow-orb w-56 h-56 bottom-0 right-0 bg-accent-400/18" aria-hidden="true" />
+    <div className="min-h-[100dvh] flex flex-col lg:flex-row panel-shell relative overflow-x-hidden">
+      <div className="glow-orb w-[20rem] h-[20rem] -top-20 -left-16 bg-violet-600/25 lg:w-[28rem] lg:h-[28rem]" aria-hidden="true" />
+      <div className="glow-orb w-56 h-56 bottom-0 right-0 bg-accent-400/12" aria-hidden="true" />
 
-      {/* Desktop brand panel */}
-      <div className="relative hidden lg:flex lg:w-[42%] xl:w-[40%] text-white p-12 flex-col justify-between overflow-hidden min-h-screen">
+      {/* Desktop brand panel — always dark branded */}
+      <div className="relative hidden lg:flex lg:w-[42%] xl:w-[40%] text-white p-12 flex-col justify-between overflow-hidden min-h-screen bg-[#05070a]">
         <div className="absolute inset-0 bg-gradient-hero opacity-90" />
         <div className="relative z-10">
           <div className="flex flex-col items-start gap-4">
@@ -80,16 +80,16 @@ const AuthLayout = () => {
       {/* Form panel — full width on mobile */}
       <div className="flex-1 flex flex-col items-center justify-start lg:justify-center py-3 sm:py-8 lg:py-10 relative min-h-[100dvh] lg:min-h-0">
         <div className="auth-shell-mobile">
-          <img src="/logo.png" alt="Prabhavi Small Finance" className="w-11 h-11 rounded-lg object-contain bg-white p-0.5 shadow-glow-sm ring-1 ring-violet-500/30" />
-          <p className="font-display font-bold text-[13px] gradient-text">प्रभावी स्मॉल फायनान्स</p>
-          <p className="text-[11px] text-slate-500 max-w-[240px] leading-snug">{t('tagline')}</p>
+          <img src="/logo.png" alt="Prabhavi Small Finance" className="w-10 h-10 rounded-lg object-contain bg-white p-0.5 shadow-glow-sm ring-1 ring-violet-500/30" />
+          <p className="font-display font-bold text-[12px] gradient-text">प्रभावी स्मॉल फायनान्स</p>
+          <p className="text-[10px] max-w-[220px] leading-snug" style={{ color: 'var(--text-muted)' }}>{t('tagline')}</p>
         </div>
 
         <div className="auth-form-wrap animate-fade-up flex-1 lg:flex-none w-full flex flex-col">
-          <div className="auth-card px-3.5 py-4 sm:px-9 sm:py-10 flex-1 lg:flex-none">
+          <div className="auth-card px-3 py-3.5 sm:px-8 sm:py-8 flex-1 lg:flex-none">
             <Outlet />
           </div>
-          <p className="mt-3 sm:mt-6 text-center text-[11px] sm:text-[14px] text-slate-500 lg:hidden pb-3">
+          <p className="mt-2.5 sm:mt-5 text-center text-[10px] sm:text-xs lg:hidden pb-3" style={{ color: 'var(--text-muted)' }}>
             <Link to="/" className="link-accent">{t('backToHome')}</Link>
             {' · '}
             <Link to="/admin/login" className="link-accent">{t('adminPortal')}</Link>

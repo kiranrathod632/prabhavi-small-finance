@@ -26,7 +26,14 @@ const seedDatabase = async () => {
     console.log(`${roles.length} roles seeded`);
 
     // ── Single Super Admin only ──
-    let superAdmin = await User.findOne({ email: 'superadmin@financeloan.com', isDeleted: { $ne: true } });
+    let superAdmin = await User.findOne({
+      $or: [
+        { email: 'vitthal@gmail.com' },
+        { email: 'superadmin@financeloan.com' },
+      ],
+      role: ROLES.SUPER_ADMIN,
+      isDeleted: { $ne: true },
+    });
     if (!superAdmin) {
       superAdmin = await User.create({
         name: 'Super Admin',
@@ -46,7 +53,7 @@ const seedDatabase = async () => {
       });
       console.log('✅ Super Admin created: vitthal@gmail.com / Vitthal@123');
     } else {
-      console.log('ℹ️ Super Admin already exists: vitthal@gmail.com');
+      console.log('ℹ️ Super Admin already exists:', superAdmin.email);
     }
 
     // ── Admin Users (Prabhavi Small Finance — महाराष्ट्र पाचोरा, स्थापना ४ जुलै २०१९) ──

@@ -1,10 +1,10 @@
 const PageHeader = ({ title, subtitle, actions }) => (
   <div className="page-header animate-fade-up">
-    <div className="min-w-0">
+    <div className="min-w-0 flex-1">
       <h1 className="page-title">{title}</h1>
       {subtitle && <p className="page-subtitle">{subtitle}</p>}
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">{actions}</div>}
+    {actions && <div className="page-header-actions">{actions}</div>}
   </div>
 );
 

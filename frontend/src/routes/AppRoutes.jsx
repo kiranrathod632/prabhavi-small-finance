@@ -28,6 +28,7 @@ import AdminLoans from '../pages/admin/AdminLoans';
 import AdminEMIs from '../pages/admin/AdminEMIs';
 import AdminTransactions from '../pages/admin/AdminTransactions';
 import AdminFunds from '../pages/admin/AdminFunds';
+import AdminPurchases from '../pages/admin/AdminPurchases';
 import AdminReports from '../pages/admin/AdminReports';
 import AdminCommissions from '../pages/admin/AdminCommissions';
 import ManageAdmins from '../pages/super-admin/ManageAdmins';
@@ -40,6 +41,7 @@ const adminPanelPages = [
   { path: 'emis', element: <AdminEMIs /> },
   { path: 'transactions', element: <AdminTransactions /> },
   { path: 'funds', element: <AdminFunds /> },
+  { path: 'purchases', element: <AdminPurchases /> },
   { path: 'commissions', element: <AdminCommissions /> },
   { path: 'reports', element: <AdminReports /> },
   { path: 'notifications', element: <Notifications /> },

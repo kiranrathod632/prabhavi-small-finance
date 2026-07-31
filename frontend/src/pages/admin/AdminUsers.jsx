@@ -140,31 +140,33 @@ const AdminUsers = () => {
 
   const statusLabel = (user) =>
     user.isSuspended ? (
-      <span className="text-red-400">{t('ui.suspended')}</span>
+      <span className="text-red-600 dark:text-red-400 font-medium">{t('ui.suspended')}</span>
     ) : user.isActive ? (
-      <span className="text-emerald-400">{t('ui.active')}</span>
+      <span className="text-emerald-600 dark:text-emerald-400 font-medium">{t('ui.active')}</span>
     ) : (
-      <span className="text-slate-500">{t('ui.inactive')}</span>
+      <span className="text-slate-500 font-medium">{t('ui.inactive')}</span>
     );
 
   const roleLabel = (user) =>
     user.role === 'admin' ? t('ui.admin') : user.role === 'user' ? t('ui.user') : user.role;
+
+  const mobileOf = (user) => user.mobile_number || user.mobile || '-';
 
   const userActions = (user) => (
     <>
       <button
         type="button"
         onClick={() => navigate(`${base}/users/${user._id}`)}
-        className="text-accent-400 p-1"
+        className="icon-btn-view"
         title={t('view')}
       >
         <HiEye className="w-4 h-4" />
       </button>
-      <button type="button" onClick={() => openEdit(user)} className="text-accent-400 p-1" title={t('edit')}>
+      <button type="button" onClick={() => openEdit(user)} className="icon-btn-edit" title={t('edit')}>
         <HiPencil className="w-4 h-4" />
       </button>
       {user.role !== 'admin' && (
-        <button type="button" onClick={() => setDeleteUser(user)} className="text-red-400 p-1" title={t('delete')}>
+        <button type="button" onClick={() => setDeleteUser(user)} className="icon-btn-danger" title={t('delete')}>
           <HiTrash className="w-4 h-4" />
         </button>
       )}
@@ -200,27 +202,36 @@ const AdminUsers = () => {
         />
       </div>
 
-      {/* Mobile cards */}
+      {/* Mobile: single-line rows (shared list scroll) */}
       <div className="mobile-list">
         {users.map((user) => (
           <div key={user._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
+            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('firstName')}</label>
                 <button
                   type="button"
                   onClick={() => navigate(`${base}/users/${user._id}`)}
-                  className="mobile-list-title text-left link-accent"
+                  className="link-accent text-left font-medium"
                 >
-                  {user.name}
+                  {user.firstName || '-'}
                 </button>
-                <p className="mobile-list-meta mt-0.5">{user.email}</p>
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">{userActions(user)}</div>
-            </div>
-            <div className="mobile-list-grid">
+              <div className="mobile-list-field">
+                <label>{t('middleName')}</label>
+                <span>{user.middleName || '-'}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('lastName')}</label>
+                <span>{user.lastName || '-'}</span>
+              </div>
+              <div className="mobile-list-field">
+                <label>{t('mobile')}</label>
+                <span>{mobileOf(user)}</span>
+              </div>
               <div className="mobile-list-field">
                 <label>{t('table.role')}</label>
-                <span className="capitalize">{roleLabel(user)}</span>
+                <span>{roleLabel(user)}</span>
               </div>
               <div className="mobile-list-field">
                 <label>{t('table.status')}</label>
@@ -234,15 +245,16 @@ const AdminUsers = () => {
                 <label>{t('table.wallet')}</label>
                 <span>{formatCurrency(user.walletBalance)}</span>
               </div>
-              <div className="mobile-list-field col-span-2">
+              <div className="mobile-list-field">
                 <label>{t('ui.joined')}</label>
                 <span>{formatDate(user.createdAt)}</span>
               </div>
             </div>
+            <div className="mobile-list-actions">{userActions(user)}</div>
           </div>
         ))}
         {!users.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('adminUsers.noJoinedUsers')}</p>
+          <p className="py-6 text-center text-[11px] text-slate-500">{t('adminUsers.noJoinedUsers')}</p>
         )}
       </div>
 
@@ -252,8 +264,10 @@ const AdminUsers = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>{t('table.name')}</th>
-                <th>{t('table.email')}</th>
+                <th>{t('firstName')}</th>
+                <th>{t('middleName')}</th>
+                <th>{t('lastName')}</th>
+                <th>{t('mobile')}</th>
                 <th>{t('table.role')}</th>
                 <th>{t('adminUsers.selectAdmin')}</th>
                 <th className="text-right">{t('table.wallet')}</th>
@@ -271,11 +285,13 @@ const AdminUsers = () => {
                       onClick={() => navigate(`${base}/users/${user._id}`)}
                       className="link-accent text-left"
                     >
-                      {user.name}
+                      {user.firstName || '-'}
                     </button>
                   </td>
-                  <td>{user.email}</td>
-                  <td className="capitalize">{roleLabel(user)}</td>
+                  <td>{user.middleName || '-'}</td>
+                  <td>{user.lastName || '-'}</td>
+                  <td>{mobileOf(user)}</td>
+                  <td>{roleLabel(user)}</td>
                   <td>{user.adminId?.name || '-'}</td>
                   <td className="text-right">{formatCurrency(user.walletBalance)}</td>
                   <td>{statusLabel(user)}</td>

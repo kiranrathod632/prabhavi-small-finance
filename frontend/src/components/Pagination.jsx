@@ -7,7 +7,7 @@ const Pagination = ({ meta, onPageChange }) => {
 
   return (
     <div className="flex items-center justify-between mt-3 sm:mt-4 px-1 sm:px-2 gap-2">
-      <p className="text-[10px] sm:text-sm text-slate-400 truncate">
+      <p className="text-[10px] sm:text-sm truncate" style={{ color: 'var(--text-muted)' }}>
         Page {page} of {totalPages} ({meta.total})
       </p>
       <div className="flex gap-1.5 sm:gap-2 shrink-0">

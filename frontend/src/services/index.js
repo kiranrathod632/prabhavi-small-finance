@@ -115,11 +115,26 @@ export const emiAPI = {
 
 // Transactions
 export const transactionAPI = {
-  getAll: (params) => api.get('/transactions', { params }),
+  getAll: (params = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== '' && v != null)
+    );
+    return api.get('/transactions', { params: clean });
+  },
   getById: (id) => api.get(`/transactions/${id}`),
   create: (data) => api.post('/transactions', data),
-  downloadStatement: (params) => api.get('/transactions/statement/pdf', { params, responseType: 'blob' }),
-  exportExcel: (params) => api.get('/transactions/export/excel', { params, responseType: 'blob' }),
+  downloadStatement: (params = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== '' && v != null)
+    );
+    return api.get('/transactions/statement/pdf', { params: clean, responseType: 'blob' });
+  },
+  exportExcel: (params = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== '' && v != null)
+    );
+    return api.get('/transactions/export/excel', { params: clean, responseType: 'blob' });
+  },
 };
 
 // Funds
