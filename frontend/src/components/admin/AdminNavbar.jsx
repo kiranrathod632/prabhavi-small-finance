@@ -34,7 +34,6 @@ const AdminNavbar = ({ onMenuClick }) => {
             <p className="text-sm font-semibold text-primary-900 dark:text-white">
               {t('adminPanel')}
             </p>
-            <p className="text-xs text-primary-400 truncate">{user?.name}</p>
           </div>
         </div>
 
@@ -67,7 +66,6 @@ const AdminNavbar = ({ onMenuClick }) => {
             </div>
             <div className="hidden sm:block min-w-0">
               <p className="text-sm font-semibold text-primary-900 dark:text-white truncate max-w-[120px]">{user?.name}</p>
-              <p className="text-xs text-primary-400 capitalize truncate">{role?.replace(/_/g, ' ')}</p>
             </div>
           </Link>
         </div>

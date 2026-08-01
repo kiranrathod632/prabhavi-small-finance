@@ -158,7 +158,7 @@ const AdminDashboard = () => {
     <div className="space-y-4 sm:space-y-8">
       <PageHeader
         title={t('adminDash.title')}
-        subtitle={t('adminPanel')}
+        // subtitle={t('adminPanel')}
         actions={
           <Link to={`${base}/loans`} className="btn-accent text-xs sm:text-sm">
             {t('adminDash.openLoanManager')}

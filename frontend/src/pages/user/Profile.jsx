@@ -115,8 +115,8 @@ const Profile = () => {
         subtitle={t('tagline')}
         actions={
           <div className="w-full sm:w-auto">
-            <p className="text-[10px] sm:text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('selectLanguage')}</p>
-            <LanguageSelector className="w-full sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} />
+            {/* <p className="text-[10px] sm:text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('selectLanguage')}</p>
+            <LanguageSelector className="w-full sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} /> */}
           </div>
         }
       />
@@ -140,21 +140,10 @@ const Profile = () => {
           </div>
 
           <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] sm:tracking-[0.18em] text-violet-600 dark:text-violet-300 mb-0.5 sm:mb-1">
-              {t('personalInfo')}
-            </p>
             <h2 className="text-lg sm:text-3xl font-bold truncate" style={{ color: 'var(--text-primary)' }}>{displayName}</h2>
-            <p className="text-[12px] sm:text-base mt-0.5 sm:mt-1 truncate" style={{ color: 'var(--text-muted)' }}>{user?.email || user?.mobile_number}</p>
+            <p className="text-[12px] sm:text-base mt-0.5 sm:mt-1 truncate" style={{ color: 'var(--text-muted)' }}>{user?.mobile_number || user?.email}</p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-              {user?.firstName && (
-                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('firstName')}: {user.firstName}</span>
-              )}
-              {user?.middleName && (
-                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('middleName')}: {user.middleName}</span>
-              )}
-              {user?.lastName && (
-                <span className="tag-pill !text-[9px] sm:!text-[11px] !px-2 !py-1">{t('lastName')}: {user.lastName}</span>
-              )}
+
             </div>
           </div>
         </div>

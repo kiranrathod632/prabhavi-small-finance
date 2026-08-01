@@ -242,12 +242,12 @@ const Loans = () => {
             <input type="number" className="input" placeholder="100000" {...register('amount', { required: t('required'), min: 1000 })} />
             {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
           </div>
-          <div>
+          {/* <div>
             <label className="label">{t('loan.purpose')}</label>
             <textarea className="input" rows={3} placeholder={t('ui.describePurpose')}
               {...register('purpose', { required: t('required') })} />
             {errors.purpose && <p className="text-red-500 text-sm mt-1">{errors.purpose.message}</p>}
-          </div>
+          </div> */}
           <button type="submit" className="btn-primary w-full">{t('ui.submitApplication')}</button>
         </form>
       </Modal>

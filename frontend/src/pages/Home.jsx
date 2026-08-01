@@ -66,9 +66,9 @@ const Home = () => {
             >
               {t('home.ctaUser')}
             </Link>
-            <Link to="/admin/login" className="hidden sm:inline-flex min-h-8 px-3 items-center rounded-full text-[11px] sm:text-xs btn-primary">
+            {/* <Link to="/admin/login" className="hidden sm:inline-flex min-h-8 px-3 items-center rounded-full text-[11px] sm:text-xs btn-primary">
               {t('home.ctaAdmin')}
-            </Link>
+            </Link> */}
             <button
               type="button"
               className="md:hidden p-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/10"
@@ -116,7 +116,7 @@ const Home = () => {
             </span>
           </div>
           <div className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
-            <BrandLogo to={null} size="xl" variant="light" stacked showTagline className="mx-auto items-center mb-4 sm:mb-6" />
+            {/* <BrandLogo to={null} size="xl" variant="light" stacked showTagline className="mx-auto items-center mb-4 sm:mb-6" /> */}
           </div>
           <h1 className="text-[1.4rem] sm:text-3xl md:text-4xl lg:text-5xl font-bold max-w-3xl leading-tight animate-fade-up" style={{ animationDelay: '0.1s' }}>
             <span className="gradient-text">{t('home.heroTitle')}</span>
@@ -209,20 +209,6 @@ const Home = () => {
               <p className="text-[13px] sm:text-base mb-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{t('home.contactAddress')}</p>
               <p className="text-[13px] sm:text-base mb-1.5" style={{ color: 'var(--text-muted)' }}>{t('home.contactEmail')}</p>
               <p className="text-[13px] sm:text-base" style={{ color: 'var(--text-muted)' }}>{t('home.contactPhone')}</p>
-            </div>
-            <div className="card !p-4 sm:!p-6">
-              <h3 className="font-display text-[13px] sm:text-lg font-semibold text-accent-600 dark:text-accent-400 mb-3">{t('tagline')}</h3>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Link to="/user/login" className="flex-1 text-center btn-primary text-[12px] sm:text-sm min-h-9">
-                  {t('userPortal')}
-                </Link>
-                <Link
-                  to="/admin/login"
-                  className="flex-1 text-center inline-flex items-center justify-center min-h-9 px-3 rounded-full border border-accent-400/35 font-semibold text-[12px] sm:text-sm hover:bg-accent-400/10 transition-all"
-                >
-                  {t('adminPortal')}
-                </Link>
-              </div>
             </div>
           </div>
         </div>

@@ -57,10 +57,6 @@ const EMICalculator = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card space-y-4">
           <div>
-            <label className="label">{t('loan.loanType')}</label>
-            <select className="input" value={loanType} onChange={(e) => setLoanType(e.target.value)}>
-              {loanTypes.map((lt) => <option key={lt.value} value={lt.value}>{t(LOAN_TYPE_KEYS[lt.value])}</option>)}
-            </select>
           </div>
           <div>
             <label className="label">{t('loan.loanAmount')} (₹)</label>

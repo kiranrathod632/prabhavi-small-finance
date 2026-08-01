@@ -147,7 +147,7 @@ const AdminPurchases = () => {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+      {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         <StatCard
           title={t('adminPurchases.totalExpenses') || 'Approved Expenses'}
           value={formatCurrency(summary?.approvedTotal || 0)}
@@ -168,7 +168,7 @@ const AdminPurchases = () => {
           value={summary?.pendingCount || 0}
           color="primary"
         />
-      </div>
+      </div> */}
 
       <div className="filter-bar">
         <select

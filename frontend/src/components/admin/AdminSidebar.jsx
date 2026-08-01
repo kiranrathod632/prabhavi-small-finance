@@ -59,11 +59,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         <div className="p-3 sm:p-5 border-b border-accent-400/10 flex items-start justify-between gap-2">
           <div className="min-w-0">
             <BrandLogo to={`${base}/dashboard`} size="sm" variant="light" forceShort onClick={onClose} />
-            <span className="inline-flex mt-1.5 sm:mt-2 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide border border-accent-400/25 text-accent-400"
-              style={{ background: 'rgba(0, 210, 255, 0.08)' }}
-            >
-              {role?.replace(/_/g, ' ')}
-            </span>
           </div>
           <button
             type="button"

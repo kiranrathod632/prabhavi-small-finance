@@ -41,12 +41,7 @@ const AdminLogin = () => {
   return (
     <div>
       <div className="auth-header">
-        <div className="auth-header-icon">
-          <HiOutlineShieldCheck className="w-5 h-5 sm:w-8 sm:h-8" />
-        </div>
-        <p className="auth-eyebrow">{t('welcomeBack')}</p>
         <h2 className="auth-title">{t('adminLogin')}</h2>
-        <p className="auth-subtitle mt-1.5 sm:mt-2">{t('adminPortal')}</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-5">

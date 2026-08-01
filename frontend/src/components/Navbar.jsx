@@ -30,9 +30,9 @@ const Navbar = ({ onMenuClick }) => {
 
           <div className="hidden lg:block min-w-0">
             <p className="text-sm font-medium text-primary-800 dark:text-primary-100 truncate">
-              {t('dash.welcome')}, {user?.name}
+              {t('dash.welcome')}
             </p>
-            <p className="text-xs text-primary-400 capitalize">{role?.replace(/_/g, ' ')}</p>
+            {/* <p className="text-xs text-primary-400 capitalize">{role?.replace(/_/g, ' ')}</p> */}
           </div>
         </div>
 
@@ -61,8 +61,8 @@ const Navbar = ({ onMenuClick }) => {
               {user?.name?.charAt(0)?.toUpperCase()}
             </div>
             <div className="hidden sm:block min-w-0">
-              <p className="text-sm font-semibold text-primary-900 dark:text-white truncate max-w-[120px]">{user?.name}</p>
-              <p className="text-xs text-primary-400 capitalize truncate">{role?.replace(/_/g, ' ')}</p>
+              <p className="text-sm font-semibold text-primary-900 dark:text-white truncate max-w-[120px]"></p>
+              {/* <p className="text-xs text-primary-400 capitalize truncate">{role?.replace(/_/g, ' ')}</p> */}
             </div>
           </div>
         </div>

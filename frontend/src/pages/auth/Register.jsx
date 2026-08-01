@@ -67,13 +67,10 @@ const Register = () => {
   return (
     <div>
       <div className="auth-header">
-        <div className="auth-header-icon">
-          <HiOutlineShieldCheck className="w-5 h-5 sm:w-8 sm:h-8" />
-        </div>
         <p className="auth-eyebrow">{t('createAccount')}</p>
-        <h2 className="auth-title">{t('register')}</h2>
+        {/* <h2 className="auth-title">{t('register')}</h2> */}
         <p className="auth-subtitle mt-1.5 sm:mt-3">
-          {t('userRegister.mobileFirstSubtitle')}
+          {/* {t('userRegister.mobileFirstSubtitle')} */}
         </p>
       </div>
 
