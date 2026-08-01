@@ -10,7 +10,7 @@ import cron from 'node-cron';
 import connectDB from './config/db.js';
 import routes from './routes/index.js';
 import errorHandler, { notFound } from './middlewares/errorHandler.js';
-import { applyOverduePenalties, sendUpcomingReminders } from './services/penaltyService.js';
+import { applyOverduePenalties, sendUpcomingReminders, sendTestUpcomingReminders } from './services/penaltyService.js';
 
 
 // import dotenv from "dotenv";
@@ -111,6 +111,34 @@ const startServer = async () => {
       );
 
       console.log('[Cron] EMI reminder scheduled: daily 10:00 AM Asia/Kolkata (2 days before due)');
+
+      // Every 5 minutes: SMS reminder for pending EMIs due today / kal / next N days
+      // Controlled by EMI_REMINDER_TEST_EVERY_5_MIN=true in .env
+      const enableEvery5Min =
+        String(process.env.EMI_REMINDER_TEST_EVERY_5_MIN || '').trim().toLowerCase() === 'true';
+
+      if (enableEvery5Min) {
+        const runEvery5MinReminder = async (reason) => {
+          try {
+            console.log(`[Cron] EMI reminder every 5 min (${reason})`);
+            await sendTestUpcomingReminders();
+          } catch (e) {
+            console.error('Every-5-min reminder cron:', e.message);
+          }
+        };
+
+        // Send once immediately on server start (aaj se abhi)
+        runEvery5MinReminder('startup');
+
+        cron.schedule(
+          '*/5 * * * *',
+          () => runEvery5MinReminder('scheduled'),
+          { timezone: 'Asia/Kolkata' }
+        );
+        console.log('[Cron] EMI reminder every 5 minutes ENABLED — latest pending EMI(s), any due date');
+      } else {
+        console.log('[Cron] EMI reminder every 5 minutes DISABLED (set EMI_REMINDER_TEST_EVERY_5_MIN=true)');
+      }
     }
   });
 };

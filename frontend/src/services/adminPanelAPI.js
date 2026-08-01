@@ -37,6 +37,8 @@ export const adminPanelAPI = {
 
   // Super Admin — manage admins
   getAdmins: (params) => adminApi.get('/manage/admins', { params }),
+  sendAdminInviteOtp: (data) => adminApi.post('/manage/admins/send-otp', data),
+  verifyAdminInviteOtp: (data) => adminApi.post('/manage/admins/verify-otp', data),
   createAdmin: (data) => adminApi.post('/manage/admins', data),
   updateAdmin: (id, data) => adminApi.put(`/manage/admins/${id}`, data),
   deleteAdmin: (id) => adminApi.delete(`/manage/admins/${id}`),

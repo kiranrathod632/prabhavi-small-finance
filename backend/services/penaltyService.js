@@ -19,7 +19,7 @@ export const applyOverduePenalties = async () => {
   today.setHours(0, 0, 0, 0);
 
   const overdueEmis = await EMI.find({
-    status: { $in: ['pending', 'partial'] },
+    status: { $in: ['pending', 'partial', 'pending_collection'] },
     dueDate: { $lt: today },
     isDeleted: { $ne: true },
   }).populate('loan', 'loanId').populate('user', 'name email');
@@ -31,7 +31,10 @@ export const applyOverduePenalties = async () => {
     const { lateFee, dailyPenalty, totalPenalty } = calculatePenalty(emi, settings, daysOverdue);
 
     if (totalPenalty > 0 && emi.status !== 'overdue') {
-      emi.status = 'overdue';
+      // Keep pending_collection so admin still sees user's payment request
+      if (emi.status !== 'pending_collection') {
+        emi.status = 'overdue';
+      }
       emi.lateFee = lateFee;
       emi.dailyPenalty = dailyPenalty;
       emi.penalty = totalPenalty;
@@ -122,8 +125,8 @@ export const sendUpcomingReminders = async () => {
       const smsResult = await sendEmiReminderSms(
         userMobile,
         emi.emiNumber,
-        emi.amount,
-        dueLabel
+        emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount,
+        emi.dueDate
       );
       if (smsResult?.success) {
         emi.reminderSmsSentAt = new Date();
@@ -140,4 +143,66 @@ export const sendUpcomingReminders = async () => {
 
   console.log(`[EMI Reminder] Checked due=${targetDue.toDateString()} | SMS sent=${sent}`);
   return { sent, dueDate: targetDue.toISOString().slice(0, 10) };
+};
+
+/**
+ * TEST helper: every 5 min — SMS for latest pending EMI(s), regardless of due date.
+ * Does not change production daily reminder behaviour (sendUpcomingReminders).
+ */
+export const sendTestUpcomingReminders = async () => {
+  const limit = Math.max(1, parseInt(process.env.EMI_REMINDER_TEST_LIMIT || '1', 10) || 1);
+
+  const pendingEmis = await EMI.find({
+    status: { $in: ['pending', 'partial', 'overdue'] },
+    isDeleted: { $ne: true },
+  })
+    .sort({ dueDate: 1, createdAt: -1 }) // nearest / latest pending first
+    .limit(limit)
+    .populate('loan', 'loanId')
+    .populate('user', 'name email mobile mobile_number');
+
+  let sent = 0;
+  let failed = 0;
+
+  console.log(`[EMI Test Reminder] Latest pending EMIs (any due date) | matching=${pendingEmis.length}`);
+
+  for (const emi of pendingEmis) {
+    const userMobile = emi.user?.mobile_number || emi.user?.mobile;
+    if (!userMobile) {
+      console.warn(`[EMI Test Reminder] No mobile for EMI ${emi.emiNumber}`);
+      continue;
+    }
+
+    const payAmount = emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount;
+    const smsAmount = payAmount || emi.principal || emi.amount;
+
+    const smsResult = await sendEmiReminderSms(
+      userMobile,
+      emi.emiNumber,
+      smsAmount,
+      emi.dueDate
+    );
+
+    if (smsResult?.success) {
+      sent += 1;
+      if (process.env.EMI_REMINDER_TEST_MARK_SENT === 'true') {
+        emi.reminderSmsSentAt = new Date();
+        await emi.save({ validateBeforeSave: false });
+      }
+      console.log(
+        `[EMI Test Reminder] SMS OK → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(smsAmount)} | due=${emi.dueDate?.toISOString?.() || emi.dueDate}`
+      );
+    } else {
+      failed += 1;
+      console.error(
+        `[EMI Test Reminder] SMS FAIL → ${userMobile} | ${emi.emiNumber}:`,
+        smsResult?.error || 'unknown'
+      );
+    }
+  }
+
+  console.log(
+    `[EMI Test Reminder] Done | found=${pendingEmis.length} | sent=${sent} | failed=${failed}`
+  );
+  return { sent, failed, total: pendingEmis.length };
 };

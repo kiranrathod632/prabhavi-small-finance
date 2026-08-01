@@ -303,6 +303,7 @@
   },
   "statusLabel": {
     "pending": "Pending",
+    "pending_collection": "Awaiting Collection",
     "completed": "Completed",
     "failed": "Failed",
     "paid": "Paid",
@@ -440,6 +441,8 @@
     "percentage": "Percentage",
     "payEmi": "Pay EMI",
     "emiPaid": "EMI paid successfully!",
+    "emiPaymentRequested": "Payment request sent. Admin will collect your EMI shortly.",
+    "awaitingCollection": "Awaiting admin collection",
     "downloadStatement": "Download Statement",
     "backToLoans": "Back to Loans",
     "loanNotFound": "Loan not found",
@@ -457,7 +460,7 @@
     "passwordResetSuccess": "Password reset successful!",
     "selectType": "Select type",
     "describePurpose": "Describe loan purpose...",
-    "payEmiConfirm": "Pay EMI #{{number}} of {{amount}}?",
+    "payEmiConfirm": "Request payment for EMI #{{number}} of {{amount}}? Admin will collect to mark it paid.",
     "passwordsMismatch": "Passwords do not match"
   },
   "paymentMethod": {
@@ -597,7 +600,14 @@
     "penaltyAmount": "Penalty Amount (₹)",
     "updatePenalty": "Update Penalty",
     "penaltyUpdated": "Penalty updated",
-    "downloadFailed": "Failed to download"
+    "downloadFailed": "Failed to download",
+    "tabAll": "All EMIs",
+    "tabCollection": "Collection",
+    "latestTitle": "Latest 5 EMIs",
+    "latestHint": "Most recently updated EMIs from your users",
+    "allEmisTitle": "All EMIs",
+    "collectionHint": "Users who requested EMI payment — collect here to mark paid",
+    "noCollection": "No EMI collection requests right now"
   },
   "adminReports": {
     "title": "Reports",
@@ -634,7 +644,10 @@
     "updated": "Admin updated",
     "deactivated": "Admin deactivated",
     "activated": "Admin activated",
-    "hint": "Create Admins like Kiran. They create Users under them and earn commission.",
-    "commissionHint": "Commission % this Admin earns on loans of their users."
+    "hint": "Create Admins with email or mobile OTP. They create Users under them and earn commission.",
+    "commissionHint": "Commission % this Admin earns on loans of their users.",
+    "otpVerified": "OTP verified",
+    "validOtp": "Enter a valid 6-digit OTP",
+    "createStep": "Step {{step}} of 3"
   }
 }

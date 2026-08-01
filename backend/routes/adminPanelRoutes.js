@@ -20,6 +20,7 @@ import {
   
   getAdmins, createAdmin, updateAdmin, deleteAdmin,
   activateAdmin, deactivateAdmin, resetAdminPassword, assignUserToAdmin,
+  sendAdminInviteOtp, verifyAdminInviteOtp,
 } from '../controllers/adminController.js';
 import { updateFund, getFunds } from '../controllers/fundController.js';
 import {
@@ -80,6 +81,8 @@ router.put('/commission-rate', authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN), update
 
 // Super Admin only — manage admins
 router.get('/manage/admins', authorize(ROLES.SUPER_ADMIN), getAdmins);
+router.post('/manage/admins/send-otp', authorize(ROLES.SUPER_ADMIN), sendAdminInviteOtp);
+router.post('/manage/admins/verify-otp', authorize(ROLES.SUPER_ADMIN), verifyAdminInviteOtp);
 router.post('/manage/admins', authorize(ROLES.SUPER_ADMIN), createAdmin);
 router.put('/manage/admins/:id', mongoIdValidator, authorize(ROLES.SUPER_ADMIN), updateAdmin);
 router.delete('/manage/admins/:id', mongoIdValidator, authorize(ROLES.SUPER_ADMIN), deleteAdmin);

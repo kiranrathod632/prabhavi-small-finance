@@ -13,7 +13,10 @@ import { HiDownload } from 'react-icons/hi';
 
 const AdminEMIs = () => {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('all'); // all | collection
   const [emis, setEmis] = useState([]);
+  const [latestEmis, setLatestEmis] = useState([]);
+  const [collectionCount, setCollectionCount] = useState(0);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
@@ -26,12 +29,44 @@ const AdminEMIs = () => {
   const [penalty, setPenalty] = useState(0);
   const [referenceNumber, setReferenceNumber] = useState('');
 
+  const fetchLatestEmis = async () => {
+    try {
+      const res = await adminPanelAPI.getEMIs({ page: 1, limit: 5, sort: '-updatedAt' });
+      setLatestEmis(res.data.data || []);
+    } catch {
+      // keep existing list; don't block page
+    }
+  };
+
+  const fetchCollectionCount = async () => {
+    try {
+      const res = await adminPanelAPI.getEMIs({ page: 1, limit: 1, status: 'pending_collection' });
+      setCollectionCount(res.data.meta?.total || 0);
+    } catch {
+      // ignore
+    }
+  };
+
   const fetchEMIs = async () => {
     setLoading(true);
     try {
-      const res = await adminPanelAPI.getEMIs({ page, limit: 10, status });
+      const params = {
+        page,
+        limit: 10,
+        sort: activeTab === 'collection' ? '-updatedAt' : 'dueDate',
+      };
+      if (activeTab === 'collection') {
+        params.status = 'pending_collection';
+      } else if (status) {
+        params.status = status;
+      }
+
+      const res = await adminPanelAPI.getEMIs(params);
       setEmis(res.data.data);
       setMeta(res.data.meta);
+      if (activeTab === 'collection') {
+        setCollectionCount(res.data.meta?.total || 0);
+      }
     } catch {
       toast.error(t('adminEmis.loadFailed'));
     } finally {
@@ -39,14 +74,31 @@ const AdminEMIs = () => {
     }
   };
 
-  useEffect(() => { fetchEMIs(); }, [page, status]);
+  const refreshAll = () => {
+    fetchEMIs();
+    fetchCollectionCount();
+    if (activeTab === 'all') fetchLatestEmis();
+  };
+
+  useEffect(() => {
+    fetchEMIs();
+    fetchCollectionCount();
+    if (activeTab === 'all') fetchLatestEmis();
+  }, [page, status, activeTab]);
+
+  const switchTab = (tab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    setPage(1);
+    if (tab === 'all') setStatus('');
+  };
 
   const handleCollect = async () => {
     try {
       await adminPanelAPI.collectEMI(collectEmi._id, { paymentMethod, referenceNumber });
       toast.success(t('adminEmis.collected'));
       setCollectEmi(null);
-      fetchEMIs();
+      refreshAll();
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -62,7 +114,7 @@ const AdminEMIs = () => {
       toast.success(t('adminEmis.partialRecorded'));
       setPartialEmi(null);
       setPartialAmount('');
-      fetchEMIs();
+      refreshAll();
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -73,7 +125,7 @@ const AdminEMIs = () => {
       await adminPanelAPI.addPenalty(penaltyEmi._id, { penalty: parseFloat(penalty) });
       toast.success(t('adminEmis.penaltyUpdated'));
       setPenaltyEmi(null);
-      fetchEMIs();
+      refreshAll();
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -94,11 +146,11 @@ const AdminEMIs = () => {
 
   const totalDue = (emi) => (emi?.amount || 0) + (emi?.penalty || 0) + (emi?.lateFee || 0);
 
-  const statusOptions = ['', 'pending', 'partial', 'paid', 'overdue'];
+  const statusOptions = ['', 'pending', 'pending_collection', 'partial', 'paid', 'overdue'];
 
-  const emiActions = (emi) => (
+  const emiActions = (emi, { collectOnly = false } = {}) => (
     <>
-      {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial') && (
+      {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial' || emi.status === 'pending_collection') && (
         <>
           <button
             type="button"
@@ -107,23 +159,27 @@ const AdminEMIs = () => {
           >
             {t('adminEmis.collectBtn')}
           </button>
-          <button
-            type="button"
-            onClick={() => { setPartialEmi(emi); setPartialAmount(''); setPaymentMethod('cash'); }}
-            className="btn-primary action-chip"
-          >
-            {t('adminEmis.partialBtn')}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPenaltyEmi(emi); setPenalty(emi.penalty || 0); }}
-            className="btn-secondary action-chip"
-          >
-            {t('adminEmis.penaltyBtn')}
-          </button>
+          {!collectOnly && emi.status !== 'pending_collection' && (
+            <button
+              type="button"
+              onClick={() => { setPartialEmi(emi); setPartialAmount(''); setPaymentMethod('cash'); }}
+              className="btn-primary action-chip"
+            >
+              {t('adminEmis.partialBtn')}
+            </button>
+          )}
+          {!collectOnly && (
+            <button
+              type="button"
+              onClick={() => { setPenaltyEmi(emi); setPenalty(emi.penalty || 0); }}
+              className="btn-secondary action-chip"
+            >
+              {t('adminEmis.penaltyBtn')}
+            </button>
+          )}
         </>
       )}
-      {emi.status === 'paid' && (
+      {!collectOnly && emi.status === 'paid' && (
         <button type="button" onClick={() => handleDownload(emi._id, emi.receiptNumber)} className="text-accent-400 p-1">
           <HiDownload className="w-4 h-4" />
         </button>
@@ -131,22 +187,10 @@ const AdminEMIs = () => {
     </>
   );
 
-  if (loading && !emis.length) return <PageLoader />;
-
-  return (
-    <div className="page-stack">
-      <PageHeader title={t('adminEmis.title')} subtitle={t('adminEmis.subtitle')} />
-
-      <div className="filter-bar">
-        <select className="input" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-          {statusOptions.map((s) => (
-            <option key={s || 'all'} value={s}>{s ? t(`statusLabel.${s}`) : t('ui.allStatus')}</option>
-          ))}
-        </select>
-      </div>
-
+  const renderEmiList = (list, { collectOnly = false, emptyKey = 'noData' } = {}) => (
+    <>
       <div className="mobile-list">
-        {emis.map((emi) => (
+        {list.map((emi) => (
           <div key={emi._id} className="mobile-list-item">
             <div className="mobile-list-head">
               <div className="min-w-0">
@@ -178,11 +222,11 @@ const AdminEMIs = () => {
                 <span>{formatDate(emi.dueDate)}</span>
               </div>
             </div>
-            <div className="mobile-list-actions">{emiActions(emi)}</div>
+            <div className="mobile-list-actions">{emiActions(emi, { collectOnly })}</div>
           </div>
         ))}
-        {!emis.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
+        {!list.length && (
+          <p className="py-8 text-center text-[12px] text-slate-500">{t(emptyKey)}</p>
         )}
       </div>
 
@@ -204,7 +248,7 @@ const AdminEMIs = () => {
               </tr>
             </thead>
             <tbody>
-              {emis.map((emi) => (
+              {list.map((emi) => (
                 <tr key={emi._id}>
                   <td>{emi.emiNumber}</td>
                   <td>{emi.user?.name}</td>
@@ -216,16 +260,77 @@ const AdminEMIs = () => {
                   <td>{formatDate(emi.dueDate)}</td>
                   <td><Badge status={emi.status} /></td>
                   <td className="text-right">
-                    <div className="inline-flex flex-wrap gap-1 justify-end">{emiActions(emi)}</div>
+                    <div className="inline-flex flex-wrap gap-1 justify-end">{emiActions(emi, { collectOnly })}</div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {!list.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t(emptyKey)}</p>
+        )}
+      </div>
+    </>
+  );
+
+  if (loading && !emis.length && !latestEmis.length) return <PageLoader />;
+
+  return (
+    <div className="page-stack">
+      <PageHeader title={t('adminEmis.title')} subtitle={t('adminEmis.subtitle')} />
+
+      <div className="filter-bar flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => switchTab('all')}
+          className={activeTab === 'all' ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
+        >
+          {t('adminEmis.tabAll')}
+        </button>
+        <button
+          type="button"
+          onClick={() => switchTab('collection')}
+          className={activeTab === 'collection' ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
+        >
+          {t('adminEmis.tabCollection')}
+          {collectionCount > 0 ? ` (${collectionCount})` : ''}
+        </button>
       </div>
 
-      <Pagination meta={meta} onPageChange={setPage} />
+      {activeTab === 'all' && (
+        <>
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {t('adminEmis.latestTitle')}
+            </h3>
+            <p className="text-xs text-slate-500">{t('adminEmis.latestHint')}</p>
+            {renderEmiList(latestEmis, { emptyKey: 'noData' })}
+          </div>
+
+          <div className="filter-bar">
+            <select className="input" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+              {statusOptions.map((s) => (
+                <option key={s || 'all'} value={s}>{s ? t(`statusLabel.${s}`) : t('ui.allStatus')}</option>
+              ))}
+            </select>
+          </div>
+
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {t('adminEmis.allEmisTitle')}
+          </h3>
+          {renderEmiList(emis)}
+          <Pagination meta={meta} onPageChange={setPage} />
+        </>
+      )}
+
+      {activeTab === 'collection' && (
+        <>
+          <p className="text-xs text-slate-500">{t('adminEmis.collectionHint')}</p>
+          {renderEmiList(emis, { collectOnly: true, emptyKey: 'adminEmis.noCollection' })}
+          <Pagination meta={meta} onPageChange={setPage} />
+        </>
+      )}
 
       <Modal isOpen={!!collectEmi} onClose={() => setCollectEmi(null)} title={t('adminEmis.collectTitle')}>
         <div className="space-y-4">

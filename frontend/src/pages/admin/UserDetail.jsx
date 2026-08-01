@@ -197,7 +197,7 @@ const UserDetail = () => {
                 <td className="p-3"><Badge status={emi.status} /></td>
                 <td className="p-3">{formatCurrency(emi.pendingAmount)}</td>
                 <td className="p-3 text-right">
-                  {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial') && (
+                  {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial' || emi.status === 'pending_collection') && (
                     <div className="flex gap-2 justify-end">
                       <button
                         type="button"

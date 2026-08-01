@@ -13,7 +13,7 @@ import { exportLoansExcel } from '../utils/excelExport.js';
 import { getInterestRateForLoanType, getSettings } from '../services/settingsService.js';
 import { addTimelineEvent, getLoanTimeline } from '../services/timelineService.js';
 import { selectTenure, disburseLoan, previewEmiPlan } from '../services/loanService.js';
-import { sendLoanStatusSms, sendSms } from '../services/smsService.js';
+import { sendLoanStatusSms, sendLoanApplicationAdminSms } from '../services/smsService.js';
 import {
   getLoanScopeFilter,
   canAccessAdminScope,
@@ -54,7 +54,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     interestRate,
     interestType: settings.interestType,
     interestRatePeriod: settings.interestRatePeriod,
-    purpose,
+    // purpose,
     status: initialStatus,
   });
 
@@ -74,32 +74,50 @@ export const createLoan = asyncHandler(async (req, res) => {
       await sendLoanStatusSms(applicantMobile, loan.loanId, 'pending');
     }
 
-    // Notify all active admins + super admins so applications are not missed
-    const staffRecipients = await User.find({
-      role: { $in: [ROLES.ADMIN, ROLES.SUPER_ADMIN] },
+    // Notify assigned admin (SMS + in-app + push) with account details
+    const recipientIds = new Set();
+    if (loanUser.adminId) recipientIds.add(loanUser.adminId.toString());
+
+    // Also keep super admins informed (existing coverage)
+    const superAdmins = await User.find({
+      role: ROLES.SUPER_ADMIN,
       isActive: true,
       isDeleted: { $ne: true },
-    }).select('_id mobile_number mobile');
+    }).select('_id');
+    superAdmins.forEach((sa) => recipientIds.add(sa._id.toString()));
 
-    const notified = new Set();
-    for (const staff of staffRecipients) {
-      const id = staff._id.toString();
-      if (notified.has(id)) continue;
-      notified.add(id);
-      await createNotification({
-        user: staff._id,
-        title: 'New Loan Application',
-        message: `${loanUser.name} applied for a loan of ₹${amount}.`,
-        type: 'info',
-        link: `/admin/loans/${loan._id}`,
-      });
+    if (recipientIds.size) {
+      const staffRecipients = await User.find({
+        _id: { $in: [...recipientIds] },
+        isActive: true,
+        isDeleted: { $ne: true },
+      }).select('_id mobile_number mobile role');
 
-      const adminMobile = staff.mobile_number || staff.mobile;
-      if (adminMobile) {
-        await sendSms({
-          to: adminMobile,
-          message: `New loan application: ${loanUser.name} applied for Rs.${amount}. Loan ID: ${loan.loanId}.`,
+      const accountLabel = loanUser.mobile_number || loanUser.mobile || loanUser.email || 'N/A';
+      for (const staff of staffRecipients) {
+        await createNotification({
+          user: staff._id,
+          title: 'New Loan Application',
+          message: `${loanUser.name} (Account: ${accountLabel}) applied for a loan of ₹${amount}. Loan ID: ${loan.loanId}.`,
+          type: 'info',
+          link: staff.role === ROLES.SUPER_ADMIN
+            ? `/super-admin/loans`
+            : `/admin/loans`,
+          metadata: {
+            loanId: loan.loanId,
+            userId: loanUser._id.toString(),
+            amount: String(amount),
+          },
         });
+
+        const adminMobile = staff.mobile_number || staff.mobile;
+        if (adminMobile) {
+          await sendLoanApplicationAdminSms({
+            adminMobile,
+            user: loanUser,
+            loan,
+          });
+        }
       }
     }
   }

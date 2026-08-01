@@ -74,11 +74,11 @@ const loanSchema = new mongoose.Schema(
       ],
       default: 'pending',
     },
-    purpose: {
-      type: String,
-      required: [true, 'Loan purpose is required'],
-      maxlength: [500, 'Purpose cannot exceed 500 characters'],
-    },
+    // purpose: {
+    //   type: String,
+    //   required: [true, 'Loan purpose is required'],
+    //   maxlength: [500, 'Purpose cannot exceed 500 characters'],
+    // },
     documents: [{
       name: String,
       url: String,

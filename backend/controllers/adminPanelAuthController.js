@@ -29,15 +29,6 @@ const findUserByCredential = async (credential) => {
   return null;
 };
 
-const validateAdminRegistrationKey = (providedKey) => {
-  const requiredKey = process.env.ADMIN_REGISTRATION_KEY;
-  if (!requiredKey) return { valid: true };
-  if (!providedKey || providedKey !== requiredKey) {
-    return { valid: false, message: 'Invalid admin registration key' };
-  }
-  return { valid: true };
-};
-
 /**
  * @route POST /api/admin/auth/login
  * Admin panel login — super_admin, admin only
@@ -90,79 +81,14 @@ export const adminPanelLogin = asyncHandler(async (req, res) => {
 
 /**
  * @route POST /api/admin/auth/register
- * Public admin registration — creates admin role only
+ * Disabled — admins are created only by Super Admin
  */
-export const adminPanelRegister = asyncHandler(async (req, res) => {
-  const { name, credential, email, password, mobile, registrationKey } = req.body;
-
-  const keyCheck = validateAdminRegistrationKey(registrationKey);
-  if (!keyCheck.valid) {
-    return sendError(res, 403, keyCheck.message);
-  }
-
-  let adminEmail = email ? email.toLowerCase().trim() : '';
-  let adminMobile = mobile || '';
-
-  if (credential) {
-    const value = credential.trim();
-    if (isValidEmail(value)) {
-      adminEmail = value.toLowerCase();
-    } else if (isValidMobile(value)) {
-      adminMobile = value;
-    } else {
-      return sendError(res, 400, 'Please enter a valid email or 10-digit mobile number');
-    }
-  }
-
-  if (!adminEmail && !adminMobile) {
-    return sendError(res, 400, 'Email or mobile number is required');
-  }
-
-  if (adminEmail) {
-    if (await User.findOne({ email: adminEmail, isDeleted: { $ne: true } })) {
-      return sendError(res, 400, 'Email already registered');
-    }
-  }
-
-  if (adminMobile) {
-    const mobileFilter = {
-      $or: [{ mobile: adminMobile }, { mobile_number: adminMobile }],
-      isDeleted: { $ne: true },
-    };
-    if (await User.findOne(mobileFilter)) {
-      return sendError(res, 400, 'Mobile number already registered');
-    }
-  }
-
-  const admin = await User.create({
-    name,
-    password,
-    ...(adminEmail && { email: adminEmail }),
-    ...(adminMobile && { mobile_number: adminMobile }),
-    role: ROLES.ADMIN,
-    commissionRate: 2,
-    isActive: true,
-    isEmailVerified: !!adminEmail,
-    isMobileVerified: !!adminMobile,
-    registrationMethod: adminEmail ? 'email' : 'mobile',
-  });
-
-  await Profile.create({
-    user: admin._id,
-    ...(adminMobile ? { phone: adminMobile } : {}),
-  });
-
-  await createAuditLog({
-    user: admin._id,
-    action: 'Admin self-registered',
-    entity: 'auth',
-    ipAddress: req.ip,
-    userAgent: req.get('User-Agent'),
-  });
-
-  sendResponse(res, 201, 'Admin registration successful. Please sign in.', {
-    user: admin.toJSON(),
-  });
+export const adminPanelRegister = asyncHandler(async (_req, res) => {
+  return sendError(
+    res,
+    403,
+    'Admin registration is disabled. Contact Super Admin to create your account.'
+  );
 });
 
 /**

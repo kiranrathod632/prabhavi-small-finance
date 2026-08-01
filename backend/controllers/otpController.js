@@ -10,7 +10,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   const otp = await createOtp(mobile, purpose);
   const smsResult = await sendOtpSms(mobile, otp, purpose);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV !== 'production';
 
   if (!smsResult.success && !isDev) {
     return sendError(res, 502, `Unable to send OTP: ${smsResult.error}`);
@@ -18,6 +18,8 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
   if (!smsResult.success && isDev) {
     console.warn(`[DEV] SMS failed (${smsResult.error}). OTP for ${mobile}: ${otp}`);
+  } else if (smsResult.success) {
+    console.log(`[OTP] SMS sent via ${smsResult.provider || 'unknown'} to ${mobile}`);
   }
 
   sendResponse(
@@ -28,7 +30,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
       mobile,
       expiresIn: 600,
       ...(isDev && { otp }),
-      ...(!smsResult.success && isDev && { smsSkipped: true }),
+      ...(!smsResult.success && isDev && { smsSkipped: true, smsError: smsResult.error }),
     }
   );
 });
@@ -55,7 +57,7 @@ export const resendOtp = asyncHandler(async (req, res) => {
 
   const otp = await createOtp(mobile, purpose);
   const smsResult = await sendOtpSms(mobile, otp, purpose);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev = process.env.NODE_ENV !== 'production';
 
   if (!smsResult.success && !isDev) {
     return sendError(res, 502, `Unable to send OTP: ${smsResult.error}`);
@@ -71,7 +73,7 @@ export const resendOtp = asyncHandler(async (req, res) => {
     smsResult.success ? 'OTP resent successfully' : 'OTP regenerated (development mode)',
     {
       ...(isDev && { otp }),
-      ...(!smsResult.success && isDev && { smsSkipped: true }),
+      ...(!smsResult.success && isDev && { smsSkipped: true, smsError: smsResult.error }),
     }
   );
 });

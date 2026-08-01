@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { HiOutlineLockClosed, HiOutlineMail, HiOutlineEye, HiOutlineEyeOff, HiOutlineShieldCheck } from 'react-icons/hi';
+import { HiOutlineLockClosed, HiOutlineMail, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils/helpers';
 import { isAdminPanelRole, getDashboardPath } from '../../utils/roles';
@@ -109,13 +109,6 @@ const AdminLogin = () => {
           )}
         </button>
       </form>
-
-      <p className="text-center mt-3 sm:mt-5 text-[11px] sm:text-sm text-slate-400">
-        {t('noAccount')}{' '}
-        <Link to="/admin/register" className="link-accent font-bold">
-          {t('adminRegister')}
-        </Link>
-      </p>
     </div>
   );
 };

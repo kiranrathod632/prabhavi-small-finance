@@ -37,7 +37,7 @@ const EMIs = () => {
   const handlePay = async () => {
     try {
       await emiAPI.pay({ emiId: payEmi._id });
-      toast.success(t('ui.emiPaid'));
+      toast.success(t('ui.emiPaymentRequested'));
       setPayEmi(null);
       fetchEMIs();
     } catch (error) {
@@ -60,12 +60,15 @@ const EMIs = () => {
 
   if (loading && !emis.length) return <PageLoader />;
 
-  const statusOptions = ['pending', 'paid', 'overdue'];
+  const statusOptions = ['pending', 'pending_collection', 'paid', 'overdue'];
 
   const emiActions = (emi) => (
     <>
-      {emi.status === 'pending' && (
+      {(emi.status === 'pending' || emi.status === 'overdue') && (
         <button type="button" onClick={() => setPayEmi(emi)} className="btn-primary action-chip">{t('ui.payNow')}</button>
+      )}
+      {emi.status === 'pending_collection' && (
+        <span className="text-xs text-slate-500">{t('ui.awaitingCollection')}</span>
       )}
       {emi.status === 'paid' && (
         <button

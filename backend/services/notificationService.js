@@ -1,11 +1,30 @@
 import Notification from '../models/Notification.js';
+import { sendPushToUser } from './pushService.js';
 
 /**
- * Create a notification for a user
+ * Create a notification for a user (+ mobile push when tokens exist)
  */
 export const createNotification = async ({ user, title, message, type = 'info', link, metadata }) => {
   try {
-    return await Notification.create({ user, title, message, type, link, metadata });
+    const notification = await Notification.create({ user, title, message, type, link, metadata });
+
+    // Fire-and-forget push — never block or change API responses
+    sendPushToUser(user, {
+      title,
+      body: message,
+      link,
+      data: {
+        type: type || 'info',
+        notificationId: notification._id?.toString?.() || '',
+        ...(metadata && typeof metadata === 'object'
+          ? Object.fromEntries(
+            Object.entries(metadata).map(([k, v]) => [k, v == null ? '' : String(v)])
+          )
+          : {}),
+      },
+    }).catch((err) => console.error('[push] notify error:', err.message));
+
+    return notification;
   } catch (error) {
     console.error('Notification error:', error.message);
     return null;

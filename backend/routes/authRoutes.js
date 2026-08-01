@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   register, registerMobile, completeProfile, login, logout, refreshToken, forgotPassword, resetPassword, resetPasswordWithOtp,
-  verifyResetOtp, changePassword, getMe, sendLoginOtp, listPublicAdmins,
+  verifyResetOtp, changePassword, getMe, sendLoginOtp, listPublicAdmins, saveFcmToken, removeFcmToken,
 } from '../controllers/authController.js';
 import { protect } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
@@ -26,5 +26,7 @@ router.post('/reset-password-otp', resetPasswordOtpValidator, validate, resetPas
 router.post('/reset-password/:token', resetPasswordValidator, validate, resetPassword);
 router.put('/change-password', protect, changePasswordValidator, validate, changePassword);
 router.get('/me', protect, getMe);
+router.post('/fcm-token', protect, saveFcmToken);
+router.delete('/fcm-token', protect, removeFcmToken);
 
 export default router;

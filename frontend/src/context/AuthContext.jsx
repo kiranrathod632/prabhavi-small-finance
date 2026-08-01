@@ -12,6 +12,10 @@ import {
   setAuthTokens,
 } from '../services/authService';
 import { getDashboardPath } from '../utils/roles';
+import {
+  registerPushNotifications,
+  unregisterPushNotifications,
+} from '../services/pushNotifications';
 
 const AuthContext = createContext(null);
 
@@ -27,6 +31,8 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
     const resolvedPath = path || getDashboardPath(userData?.role);
     setDashboardPath(resolvedPath);
+    // Mobile / web push — non-blocking
+    registerPushNotifications().catch(() => {});
     return { user: userData, accessToken, refreshToken, dashboardPath: resolvedPath };
   }, []);
 
@@ -49,6 +55,7 @@ export const AuthProvider = ({ children }) => {
         const data = await getCurrentUser();
         setUser(data.user);
         setDashboardPath(getDashboardPath(data.user?.role));
+        registerPushNotifications().catch(() => {});
       } catch {
         clearAuthTokens();
         setUser(null);
@@ -83,6 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      await unregisterPushNotifications();
       await logoutUser();
     } catch {
       // Clear local session even if server logout fails

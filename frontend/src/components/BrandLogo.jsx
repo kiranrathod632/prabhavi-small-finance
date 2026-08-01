@@ -42,7 +42,7 @@ const BrandLogo = ({
   const { t } = useTranslation();
   const s = SIZES[size] || SIZES.md;
   const titleClass = variant === 'light' ? 'gradient-text' : 'text-white';
-  const subtitleClass = variant === 'light' ? 'text-slate-400' : 'text-slate-500';
+  const subtitleClass = variant === 'light' ? 'text-slate-500 dark:text-slate-400' : 'text-slate-500';
 
   const content = (
     <span
@@ -50,14 +50,14 @@ const BrandLogo = ({
         stacked ? 'flex-col items-center text-center' : 'items-center gap-2 sm:gap-3'
       } ${className}`}
     >
+      {/* Logo PNG is light-theme artwork — always sit on a white pad so it reads in dark & light */}
       <img
         src="/logo.png"
         alt={t('appName')}
-        className={`${s.img} rounded-xl object-contain bg-white/95 p-0.5 shadow-glow-sm shrink-0 ring-1 ring-violet-500/30`}
+        className={`${s.img} rounded-xl object-contain bg-white p-0.5 sm:p-1 shadow-sm shrink-0 ring-1 ring-black/5 dark:ring-white/15`}
       />
       {showAppName && (
         <span className={`min-w-0 leading-tight ${stacked ? 'text-center mt-2 sm:mt-3 max-w-xs sm:max-w-md' : 'text-left flex-1'}`}>
-          {/* Mobile / narrow: short name — unless stacked hero (show full name) */}
           <span
             className={`font-display tracking-tight ${s.shortTitle} ${titleClass} ${
               forceShort ? 'block' : stacked ? 'hidden' : 'block md:hidden'
@@ -65,7 +65,6 @@ const BrandLogo = ({
           >
             {t('appShortName')}
           </span>
-          {/* Full company name */}
           {!forceShort && (
             <span
               className={`font-display font-semibold tracking-tight ${s.title} ${titleClass} ${

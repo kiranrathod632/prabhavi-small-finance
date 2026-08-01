@@ -10,7 +10,6 @@ import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import AdminLogin from '../pages/auth/AdminLogin';
-import AdminRegister from '../pages/auth/AdminRegister';
 import CompleteProfile from '../pages/auth/CompleteProfile';
 
 import UserDashboard from '../pages/user/UserDashboard';
@@ -69,7 +68,7 @@ const AppRoutes = () => (
     {/* Admin portal auth */}
     <Route element={<AdminAuthLayout />}>
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/register" element={<AdminRegister />} />
+      <Route path="/admin/register" element={<Navigate to="/admin/login" replace />} />
       <Route path="/super-admin/login" element={<Navigate to="/admin/login" replace />} />
     </Route>
 

@@ -10,6 +10,7 @@ import { sendOtpSms } from '../services/smsService.js';
 import { createOtp } from '../services/otpService.js';
 import { createNotification } from '../services/notificationService.js';
 import { LOGIN_PORTALS, ROLES } from '../config/permissions.js';
+import { registerFcmToken, unregisterFcmToken } from '../services/pushService.js';
 
 // --- Helper Functions ---
 
@@ -735,6 +736,32 @@ export const changePassword = asyncHandler(async (req, res) => {
 export const getMe = asyncHandler(async (req, res) => {
   const profile = await Profile.findOne({ user: req.user._id });
   sendResponse(res, 200, 'User profile fetched', { user: req.user, profile });
+});
+
+/**
+ * @route   POST /api/auth/fcm-token
+ * Register device token for mobile / web push notifications
+ */
+export const saveFcmToken = asyncHandler(async (req, res) => {
+  const token = (req.body.token || '').trim();
+  const platform = (req.body.platform || 'web').trim().toLowerCase();
+  if (!token) return sendError(res, 400, 'FCM token is required');
+
+  const allowed = ['web', 'android', 'ios', 'mobile'];
+  const platformValue = allowed.includes(platform) ? platform : 'web';
+
+  await registerFcmToken(req.user._id, token, platformValue);
+  sendResponse(res, 200, 'Push notification token saved', { registered: true });
+});
+
+/**
+ * @route   DELETE /api/auth/fcm-token
+ */
+export const removeFcmToken = asyncHandler(async (req, res) => {
+  const token = (req.body.token || '').trim();
+  if (!token) return sendError(res, 400, 'FCM token is required');
+  await unregisterFcmToken(req.user._id, token);
+  sendResponse(res, 200, 'Push notification token removed', { removed: true });
 });
 
 /**

@@ -109,6 +109,28 @@ export const sendEMIReminderEmail = async (user, emi, loan) => {
 };
 
 /**
+ * Send OTP email (admin invite / verification)
+ */
+export const sendOtpEmail = async (email, otp, purpose = 'verification') => {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2563eb;">Your OTP Code</h2>
+      <p>Your one-time password for ${purpose.replace(/_/g, ' ')} is:</p>
+      <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #111827;">${otp}</p>
+      <p>This code expires in 10 minutes. Do not share it with anyone.</p>
+      <p>Best regards,<br/>Prabhavi Small Finance</p>
+    </div>
+  `;
+  const info = await sendEmail({
+    to: email,
+    subject: `OTP - ${purpose.replace(/_/g, ' ')}`,
+    html,
+    text: `Your OTP is ${otp}. It expires in 10 minutes.`,
+  });
+  return { success: !!info, error: info ? null : 'Email send failed' };
+};
+
+/**
  * Send EMI payment confirmation email
  */
 export const sendEMIPaymentEmail = async (user, payment, emi, loan) => {

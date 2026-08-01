@@ -448,7 +448,7 @@ export const createLoanValidator = [
   body('loanType').isIn(['personal', 'home', 'business', 'education', 'vehicle']).withMessage('Invalid loan type'),
   body('amount').isFloat({ min: 1000 }).withMessage('Minimum loan amount is ₹1,000'),
   body('tenure').optional().isInt({ min: 1, max: 360 }),
-  body('purpose').trim().notEmpty().withMessage('Loan purpose is required'),
+  // body('purpose').trim().notEmpty().withMessage('Loan purpose is required'),
 ];
 
 export const updateLoanValidator = [

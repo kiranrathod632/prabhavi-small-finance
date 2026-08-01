@@ -141,6 +141,17 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    fcmTokens: {
+      type: [
+        {
+          token: { type: String, required: true },
+          platform: { type: String, enum: ['web', 'android', 'ios', 'mobile'], default: 'web' },
+          updatedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+      select: false,
+    },
   },
   { timestamps: true }
 );
@@ -227,6 +238,7 @@ userSchema.methods.toJSON = function() {
   delete obj.passwordResetExpires;
   delete obj.otp;
   delete obj.otp_expiry;
+  delete obj.fcmTokens;
   return obj;
 };
 

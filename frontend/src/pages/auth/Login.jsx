@@ -41,14 +41,13 @@ const Login = () => {
     <div>
       <div className="auth-header">
         <div className="auth-header-icon">
-          <HiOutlineMail className="w-5 h-5 sm:w-8 sm:h-8" />
+          <HiOutlineMail className="w-5 h-5 sm:w-7 sm:h-7" />
         </div>
-        <p className="auth-eyebrow">{t('welcomeBack')}</p>
         <h2 className="auth-title">{t('signIn')}</h2>
-        <p className="auth-subtitle mt-1.5 sm:mt-3">{t('userPortal')}</p>
+        <p className="auth-subtitle mt-1.5">{t('welcomeBack')}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
         <div className="auth-field">
           <label className="auth-label flex items-center gap-1.5">
             <HiOutlineMail className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-400 shrink-0" />
@@ -91,6 +90,7 @@ const Login = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-400 transition-colors"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
             </button>
@@ -98,13 +98,13 @@ const Login = () => {
           {errors.password && <p className="auth-error">{errors.password.message}</p>}
         </div>
 
-        <div className="text-right">
-          <Link to="/user/forgot-password" className="text-[11px] sm:text-sm link-accent font-semibold">
+        <div className="text-right -mt-1">
+          <Link to="/user/forgot-password" className="text-[12px] sm:text-sm link-accent font-semibold">
             {t('forgotPassword')}
           </Link>
         </div>
 
-        <button type="submit" disabled={loading} className="auth-btn-primary group">
+        <button type="submit" disabled={loading} className="auth-btn-primary group mt-1">
           {loading ? <LoadingSpinner size="sm" /> : (
             <span className="flex items-center justify-center gap-1.5">
               {t('signIn')}
@@ -113,7 +113,7 @@ const Login = () => {
           )}
         </button>
 
-        <p className="text-center text-[11px] sm:text-sm text-slate-400 pt-1 pb-0.5">
+        <p className="text-center text-[12px] sm:text-sm text-slate-500 pt-1">
           {t('noAccount')}{' '}
           <Link to="/user/register" className="link-accent font-bold">
             {t('register')}

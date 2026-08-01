@@ -31,7 +31,7 @@ const emiSchema = new mongoose.Schema(
     paidDate: Date,
     status: {
       type: String,
-      enum: ['pending', 'paid', 'overdue', 'partial', 'failed'],
+      enum: ['pending', 'paid', 'overdue', 'partial', 'failed', 'pending_collection'],
       default: 'pending',
     },
     penalty: { type: Number, default: 0 },

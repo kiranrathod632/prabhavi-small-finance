@@ -129,10 +129,12 @@
   }
 
   .auth-card {
-    @apply relative overflow-hidden rounded-xl sm:rounded-[1.75rem];
+    @apply relative rounded-xl sm:rounded-[1.75rem];
     background: var(--bg-card);
     border: 1px solid var(--border-card);
     box-shadow: var(--shadow-card);
+    /* Keep top accent without clipping form controls (submit button, etc.) */
+    overflow: visible;
   }
 
   .dark .auth-card {
@@ -146,7 +148,7 @@
 
   .auth-card::before {
     content: '';
-    @apply absolute top-0 left-0 right-0 h-[2px] sm:h-[3px];
+    @apply absolute top-0 left-0 right-0 h-[2px] sm:h-[3px] rounded-t-xl sm:rounded-t-[1.75rem] pointer-events-none z-10;
     background: var(--gradient-main);
   }
 
@@ -155,9 +157,9 @@
   }
 
   .auth-input {
-    @apply w-full min-h-[36px] sm:min-h-[44px] px-2.5 sm:px-4 text-[12px] sm:text-sm rounded-lg sm:rounded-xl focus:outline-none transition-all duration-200;
+    @apply w-full min-h-[40px] sm:min-h-[46px] px-3 sm:px-4 text-[13px] sm:text-sm rounded-lg sm:rounded-xl focus:outline-none transition-all duration-200;
     color: var(--text-primary);
-    background: var(--bg-input);
+    background: var(--bg-muted);
     border: 1px solid var(--border-input);
   }
 
@@ -180,7 +182,7 @@
   }
 
   .auth-btn {
-    @apply inline-flex items-center justify-center gap-1.5 w-full min-h-[36px] sm:min-h-[44px] px-3 sm:px-5 rounded-lg sm:rounded-xl text-[12px] sm:text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-1.5 w-full min-h-[42px] sm:min-h-[48px] px-3 sm:px-5 rounded-lg sm:rounded-xl text-[13px] sm:text-sm font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
   }
 
   .auth-btn-primary {
@@ -774,11 +776,11 @@
   }
 
   .auth-header {
-    @apply text-center mb-3.5 sm:mb-7;
+    @apply text-center mb-4 sm:mb-6;
   }
 
   .auth-header-icon {
-    @apply mx-auto mb-2 sm:mb-4 flex h-10 w-10 sm:h-[4.25rem] sm:w-[4.25rem] items-center justify-center rounded-lg sm:rounded-2xl text-violet-100;
+    @apply mx-auto mb-2.5 sm:mb-3.5 flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl text-violet-100;
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(0, 210, 255, 0.15));
     border: 1px solid rgba(124, 58, 237, 0.4);
     box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
@@ -831,8 +833,20 @@
   }
 
   .auth-form-wrap {
-    @apply w-full max-w-[340px] sm:max-w-md mx-auto px-3 sm:px-0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    @apply w-full max-w-[360px] sm:max-w-[400px] mx-auto px-4 sm:px-0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+  }
+
+  .auth-brand-panel {
+    @apply relative hidden lg:flex lg:w-[42%] xl:w-[40%] flex-col overflow-hidden min-h-screen;
+  }
+
+  .auth-brand-inner {
+    @apply relative z-10 flex flex-col justify-between gap-8 h-full min-h-screen p-10 xl:p-12;
+  }
+
+  .auth-brand-board {
+    @apply mt-7 p-4 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm;
   }
 }
 

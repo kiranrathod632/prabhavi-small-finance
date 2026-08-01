@@ -79,7 +79,7 @@ export const getUser = asyncHandler(async (req, res) => {
   const profile = await Profile.findOne({ user: user._id });
   const loans = await Loan.find({ user: user._id, isDeleted: { $ne: true } }).sort('-createdAt');
   const emis = await EMI.find({ user: user._id, isDeleted: { $ne: true } }).sort('dueDate');
-  const pendingEmis = emis.filter((e) => ['pending', 'overdue', 'partial'].includes(e.status));
+  const pendingEmis = emis.filter((e) => ['pending', 'overdue', 'partial', 'pending_collection'].includes(e.status));
   const overdueEmis = emis.filter((e) => e.status === 'overdue' || (e.penalty || 0) > 0);
 
   // Keep existing keys (user, profile, recentLoans) — add loans/emis/summary without breaking clients
