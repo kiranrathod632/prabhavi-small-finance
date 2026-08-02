@@ -598,7 +598,7 @@ const creditUserWallet = async (loan, netDisbursed, performedBy) => {
     user: loan.user,
     title: 'Wallet Credited',
     message: `₹${netDisbursed} has been credited to your wallet from loan ${loan.loanId}`,
-    type: 'wallet',
+    type: 'payment',
     link: `/wallet`,
   });
 

@@ -237,6 +237,10 @@ export const payEMI = asyncHandler(async (req, res) => {
     fund.emiCollected += totalAmount;
     fund.availableFund += totalAmount;
     fund.profit += emi.interest;
+    fund.interestEarned = (fund.interestEarned || 0) + (emi.interest || 0);
+    if (emi.penalty) {
+      fund.penaltyEarned = (fund.penaltyEarned || 0) + (emi.penalty || 0);
+    }
     fund.history.push({ type: 'emi_collection', amount: totalAmount, description: `EMI ${emi.emiNumber} - ${loan.loanId}` });
     await fund.save();
   }
@@ -383,6 +387,10 @@ export const adminCollectEMI = asyncHandler(async (req, res) => {
     fund.emiCollected = (fund.emiCollected || 0) + totalAmount;
     fund.availableFund = (fund.availableFund || 0) + totalAmount;
     fund.profit = (fund.profit || 0) + (emi.interest || 0);
+    fund.interestEarned = (fund.interestEarned || 0) + (emi.interest || 0);
+    if (emi.penalty) {
+      fund.penaltyEarned = (fund.penaltyEarned || 0) + (emi.penalty || 0);
+    }
     fund.history.push({ type: 'emi_collection', amount: totalAmount, description: `Admin collected EMI ${emi.emiNumber} - ${loan.loanId}` });
     await fund.save();
   }

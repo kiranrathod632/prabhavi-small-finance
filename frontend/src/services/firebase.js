@@ -3,14 +3,23 @@
  * Dynamic string imports — app runs even if `firebase` npm package is missing.
  */
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+const env = (key) => {
+  const value = import.meta.env[key];
+  return typeof value === 'string' ? value.trim() : value;
 };
+
+const firebaseConfig = {
+  apiKey: env('VITE_FIREBASE_API_KEY'),
+  authDomain: env('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: env('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: env('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: env('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: env('VITE_FIREBASE_APP_ID'),
+};
+
+export const getFirebaseWebConfig = () => ({ ...firebaseConfig });
+
+export const getFirebaseVapidKey = () => env('VITE_FIREBASE_VAPID_KEY');
 
 export const isFirebaseConfigured = () =>
   Boolean(
@@ -18,7 +27,7 @@ export const isFirebaseConfigured = () =>
     && firebaseConfig.projectId
     && firebaseConfig.messagingSenderId
     && firebaseConfig.appId
-    && import.meta.env.VITE_FIREBASE_VAPID_KEY
+    && getFirebaseVapidKey()
   );
 
 let appInstance = null;

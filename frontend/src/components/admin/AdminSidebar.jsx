@@ -6,6 +6,8 @@ import {
   HiShieldCheck, HiCog, HiX, HiShoppingCart,
 } from 'react-icons/hi';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import { useAdminCounts } from '../../context/AdminCountsContext';
 import BrandLogo from '../BrandLogo';
 import { ROLES, hasPermission } from '../../utils/roles';
 
@@ -14,23 +16,46 @@ const getAdminBase = (role) => {
   return '/admin';
 };
 
+const CountBadge = ({ count }) => {
+  if (!count || count < 1) return null;
+  return (
+    <span className="ml-auto min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[1.15rem] text-center shrink-0">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
+
 const AdminSidebar = ({ isOpen, onClose }) => {
   const { pathname } = useLocation();
   const { role, user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { pendingLoanCount, emiCollectionCount } = useAdminCounts();
   const { t } = useTranslation();
   const base = getAdminBase(role);
 
   const allLinks = [
     { to: `${base}/dashboard`, label: t('dashboard'), icon: HiHome, perm: null },
     { to: `${base}/users`, label: t('users'), icon: HiUsers, perm: 'users.view' },
-    { to: `${base}/loans`, label: t('loans'), icon: HiCash, perm: 'loans.view' },
-    { to: `${base}/emis`, label: t('emis'), icon: HiCreditCard, perm: 'emis.view' },
+    {
+      to: `${base}/loans`,
+      label: t('loans'),
+      icon: HiCash,
+      perm: 'loans.view',
+      badge: pendingLoanCount,
+    },
+    {
+      to: `${base}/emis`,
+      label: t('adminEmis.title') || t('adminDash.emiCollection') || 'EMI Collection',
+      icon: HiCreditCard,
+      perm: 'emis.view',
+      badge: emiCollectionCount,
+    },
     { to: `${base}/transactions`, label: t('transactions'), icon: HiDocumentText, perm: 'transactions.view' },
     { to: `${base}/funds`, label: t('funds'), icon: HiCurrencyRupee, perm: 'funds.view' },
     { to: `${base}/purchases`, label: t('adminPurchases.nav') || 'Purchases', icon: HiShoppingCart, perm: 'funds.view' },
     { to: `${base}/commissions`, label: t('commission.title') || 'Commission', icon: HiChartBar, perm: 'commission.view' },
     { to: `${base}/reports`, label: t('reports'), icon: HiChartBar, perm: 'reports.view' },
-    { to: `${base}/notifications`, label: t('notifications'), icon: HiBell, perm: null },
+    { to: `${base}/notifications`, label: t('notifications'), icon: HiBell, perm: null, badge: unreadCount },
     { to: `${base}/profile`, label: t('profile'), icon: HiCog, perm: null },
   ];
 
@@ -71,7 +96,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-2 sm:p-3 space-y-0.5 sm:space-y-1 flex-1 overflow-y-auto">
-          {links.map(({ to, label, icon: Icon }) => (
+          {links.map(({ to, label, icon: Icon, badge }) => (
             <Link
               key={to}
               to={to}
@@ -83,7 +108,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
               }`}
             >
               <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-              <span className="truncate">{label}</span>
+              <span className="truncate flex-1">{label}</span>
+              <CountBadge count={badge} />
             </Link>
           ))}
         </nav>

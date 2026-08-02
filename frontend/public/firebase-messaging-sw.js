@@ -9,12 +9,22 @@ let messagingStarted = false;
 const startMessaging = (config) => {
   if (messagingStarted || !config?.apiKey || !config?.projectId) return;
   try {
-    firebase.initializeApp(config);
+    // Trim in case config was passed with accidental whitespace
+    const clean = Object.fromEntries(
+      Object.entries(config).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])
+    );
+    firebase.initializeApp(clean);
     const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
-      const title = payload?.notification?.title || 'Prabhavi Small Finance';
+      // If FCM already includes a notification payload, the browser may auto-display it.
+      // Only show manually for data-only messages to avoid duplicate OS notifications.
+      if (payload?.notification?.title || payload?.notification?.body) {
+        return;
+      }
+
+      const title = payload?.data?.title || 'Prabhavi Small Finance';
       const options = {
-        body: payload?.notification?.body || '',
+        body: payload?.data?.body || '',
         icon: '/logo.png',
         badge: '/logo.png',
         data: payload?.data || {},
@@ -34,6 +44,22 @@ self.addEventListener('message', (event) => {
   }
 });
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+      // Ask any open client to re-send Firebase config after SW activate/update
+      const clientsList = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      clientsList.forEach((client) => {
+        client.postMessage({ type: 'REQUEST_FIREBASE_CONFIG' });
+      });
+    })()
+  );
+});
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const link = event.notification?.data?.link || '/';
@@ -41,7 +67,7 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
-          client.navigate(link);
+          if ('navigate' in client) client.navigate(link);
           return client.focus();
         }
       }

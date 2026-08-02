@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import adminPanelAPI from '../../services/adminPanelAPI';
+import { useAdminCounts } from '../../context/AdminCountsContext';
 import { formatCurrency, formatDate, getErrorMessage, downloadBlob } from '../../utils/helpers';
 import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
@@ -14,6 +15,7 @@ import { TENURE_OPTIONS } from '../../utils/roles';
 
 const AdminLoans = () => {
   const { t } = useTranslation();
+  const { refreshAdminCounts } = useAdminCounts();
   const [loans, setLoans] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -199,6 +201,7 @@ const AdminLoans = () => {
       
       resetFields();
       fetchLoans();
+      refreshAdminCounts();
     } catch (error) {
       toast.error(getErrorMessage(error));
     }

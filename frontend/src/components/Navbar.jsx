@@ -2,13 +2,24 @@ import { HiMenu, HiMoon, HiSun, HiBell } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useNotifications } from '../context/NotificationContext';
 import { Link } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
 import { getDashboardPath, isAdminPanelRole } from '../utils/roles';
 
+const UnreadBadge = ({ count }) => {
+  if (!count || count < 1) return null;
+  return (
+    <span className="absolute -top-0.5 -right-0.5 min-w-[1.05rem] h-[1.05rem] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[1.05rem] text-center shadow-sm">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+};
+
 const Navbar = ({ onMenuClick }) => {
   const { user, role, updateLanguage } = useAuth();
   const { darkMode, toggleDarkMode } = useTheme();
+  const { unreadCount } = useNotifications();
   const { t } = useTranslation();
 
   const notifPath = isAdminPanelRole(role)
@@ -32,7 +43,6 @@ const Navbar = ({ onMenuClick }) => {
             <p className="text-sm font-medium text-primary-800 dark:text-primary-100 truncate">
               {t('dash.welcome')}
             </p>
-            {/* <p className="text-xs text-primary-400 capitalize">{role?.replace(/_/g, ' ')}</p> */}
           </div>
         </div>
 
@@ -51,18 +61,22 @@ const Navbar = ({ onMenuClick }) => {
           <Link
             to={notifPath}
             className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl hover:bg-primary-100 dark:hover:bg-primary-800 text-primary-600 dark:text-primary-300 relative"
-            aria-label="Notifications"
+            aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
           >
             <HiBell className="w-4 h-4 sm:w-5 sm:h-5" />
+            <UnreadBadge count={unreadCount} />
           </Link>
 
           <div className="flex items-center gap-2 pl-2 sm:pl-3 ml-0.5 border-l border-primary-200 dark:border-primary-700">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-brand rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-glow-sm ring-2 ring-accent-400/30">
-              {user?.name?.charAt(0)?.toUpperCase()}
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-brand rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-glow-sm ring-2 ring-accent-400/30 overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0)?.toUpperCase()
+              )}
             </div>
             <div className="hidden sm:block min-w-0">
               <p className="text-sm font-semibold text-primary-900 dark:text-white truncate max-w-[120px]"></p>
-              {/* <p className="text-xs text-primary-400 capitalize truncate">{role?.replace(/_/g, ' ')}</p> */}
             </div>
           </div>
         </div>

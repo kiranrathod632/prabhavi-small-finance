@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import adminPanelAPI from '../../services/adminPanelAPI';
+import { useAdminCounts } from '../../context/AdminCountsContext';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import { PAYMENT_METHODS } from '../../utils/roles';
 import Badge from '../../components/Badge';
@@ -13,7 +14,8 @@ import { HiDownload } from 'react-icons/hi';
 
 const AdminEMIs = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('all'); // all | collection
+  const { refreshAdminCounts, setEmiCollectionCount } = useAdminCounts();
+  const [activeTab, setActiveTab] = useState('collection'); // collection | all
   const [emis, setEmis] = useState([]);
   const [latestEmis, setLatestEmis] = useState([]);
   const [collectionCount, setCollectionCount] = useState(0);
@@ -31,8 +33,28 @@ const AdminEMIs = () => {
 
   const fetchLatestEmis = async () => {
     try {
-      const res = await adminPanelAPI.getEMIs({ page: 1, limit: 5, sort: '-updatedAt' });
-      setLatestEmis(res.data.data || []);
+      // Upcoming next 10 EMIs by due date
+      const res = await adminPanelAPI.getEMIs({
+        page: 1,
+        limit: 10,
+        sort: 'dueDate',
+        status: 'pending',
+      });
+      let list = Array.isArray(res.data?.data) ? res.data.data : [];
+
+      if (list.length < 10) {
+        const overdueRes = await adminPanelAPI.getEMIs({
+          page: 1,
+          limit: 10 - list.length,
+          sort: 'dueDate',
+          status: 'overdue',
+        });
+        const overdue = Array.isArray(overdueRes.data?.data) ? overdueRes.data.data : [];
+        const ids = new Set(list.map((e) => e._id));
+        list = [...list, ...overdue.filter((e) => !ids.has(e._id))].slice(0, 10);
+      }
+
+      setLatestEmis(list);
     } catch {
       // keep existing list; don't block page
     }
@@ -41,7 +63,9 @@ const AdminEMIs = () => {
   const fetchCollectionCount = async () => {
     try {
       const res = await adminPanelAPI.getEMIs({ page: 1, limit: 1, status: 'pending_collection' });
-      setCollectionCount(res.data.meta?.total || 0);
+      const total = res.data.meta?.total || 0;
+      setCollectionCount(total);
+      setEmiCollectionCount(total);
     } catch {
       // ignore
     }
@@ -65,7 +89,9 @@ const AdminEMIs = () => {
       setEmis(res.data.data);
       setMeta(res.data.meta);
       if (activeTab === 'collection') {
-        setCollectionCount(res.data.meta?.total || 0);
+        const total = res.data.meta?.total || 0;
+        setCollectionCount(total);
+        setEmiCollectionCount(total);
       }
     } catch {
       toast.error(t('adminEmis.loadFailed'));
@@ -77,13 +103,14 @@ const AdminEMIs = () => {
   const refreshAll = () => {
     fetchEMIs();
     fetchCollectionCount();
-    if (activeTab === 'all') fetchLatestEmis();
+    fetchLatestEmis();
+    refreshAdminCounts();
   };
 
   useEffect(() => {
     fetchEMIs();
     fetchCollectionCount();
-    if (activeTab === 'all') fetchLatestEmis();
+    fetchLatestEmis();
   }, [page, status, activeTab]);
 
   const switchTab = (tab) => {
@@ -283,20 +310,36 @@ const AdminEMIs = () => {
       <div className="filter-bar flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => switchTab('all')}
-          className={activeTab === 'all' ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
-        >
-          {t('adminEmis.tabAll')}
-        </button>
-        <button
-          type="button"
           onClick={() => switchTab('collection')}
           className={activeTab === 'collection' ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
         >
           {t('adminEmis.tabCollection')}
           {collectionCount > 0 ? ` (${collectionCount})` : ''}
         </button>
+        <button
+          type="button"
+          onClick={() => switchTab('all')}
+          className={activeTab === 'all' ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
+        >
+          {t('adminEmis.tabAll')}
+        </button>
       </div>
+
+      {activeTab === 'collection' && (
+        <>
+          <p className="text-xs text-slate-500">{t('adminEmis.collectionHint')}</p>
+          {renderEmiList(emis, { collectOnly: true, emptyKey: 'adminEmis.noCollection' })}
+          <Pagination meta={meta} onPageChange={setPage} />
+
+          <div className="space-y-2 pt-2">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {t('adminEmis.latestTitle')}
+            </h3>
+            <p className="text-xs text-slate-500">{t('adminEmis.latestHint')}</p>
+            {renderEmiList(latestEmis, { emptyKey: 'noData' })}
+          </div>
+        </>
+      )}
 
       {activeTab === 'all' && (
         <>
@@ -320,14 +363,6 @@ const AdminEMIs = () => {
             {t('adminEmis.allEmisTitle')}
           </h3>
           {renderEmiList(emis)}
-          <Pagination meta={meta} onPageChange={setPage} />
-        </>
-      )}
-
-      {activeTab === 'collection' && (
-        <>
-          <p className="text-xs text-slate-500">{t('adminEmis.collectionHint')}</p>
-          {renderEmiList(emis, { collectOnly: true, emptyKey: 'adminEmis.noCollection' })}
           <Pagination meta={meta} onPageChange={setPage} />
         </>
       )}

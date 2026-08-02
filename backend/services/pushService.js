@@ -3,28 +3,45 @@ import User from '../models/User.js';
 
 let initialized = false;
 
+const cleanEnv = (value) => (typeof value === 'string' ? value.trim() : value);
+
+const normalizePrivateKey = (raw) => {
+  if (!raw || typeof raw !== 'string') return '';
+  let key = raw.trim();
+  // Accidental JSON trailing comma / wrapping quotes from .env paste
+  while (key.endsWith(',')) key = key.slice(0, -1).trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"'))
+    || (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  return key.replace(/\\n/g, '\n').trim();
+};
+
 const initFirebaseAdmin = () => {
-  if (initialized) return admin.apps.length > 0;
-  initialized = true;
+  if (admin.apps.length > 0) {
+    initialized = true;
+    return true;
+  }
+  if (initialized) return false;
 
   try {
-    if (admin.apps.length > 0) return true;
-
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    const jsonCreds = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const projectId = cleanEnv(process.env.FIREBASE_PROJECT_ID);
+    const clientEmail = cleanEnv(process.env.FIREBASE_CLIENT_EMAIL);
+    const privateKey = normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY);
+    const jsonCreds = cleanEnv(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 
     if (jsonCreds) {
       const creds = JSON.parse(jsonCreds);
       admin.initializeApp({
         credential: admin.credential.cert(creds),
       });
+      initialized = true;
       return true;
     }
 
     if (projectId && clientEmail && privateKey) {
-      privateKey = privateKey.replace(/\\n/g, '\n');
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId,
@@ -32,13 +49,17 @@ const initFirebaseAdmin = () => {
           privateKey,
         }),
       });
+      initialized = true;
       return true;
     }
 
+    initialized = true;
     console.warn('[push] Firebase Admin not configured — push notifications disabled');
     return false;
   } catch (error) {
     console.error('[push] Firebase init failed:', error.message);
+    // Allow retry on next send if credentials were temporarily bad
+    initialized = false;
     return false;
   }
 };
@@ -65,11 +86,23 @@ export const sendPushToUser = async (userId, { title, body, data = {}, link } = 
       },
       data: {
         ...Object.fromEntries(
-          Object.entries({ ...data, link: link || data.link || '' }).map(([k, v]) => [
-            k,
-            v == null ? '' : String(v),
-          ])
+          Object.entries({
+            ...data,
+            title,
+            body: body || '',
+            link: link || data.link || '',
+          }).map(([k, v]) => [k, v == null ? '' : String(v)])
         ),
+      },
+      webpush: {
+        fcmOptions: {
+          link: link || data.link || '/',
+        },
+        notification: {
+          title,
+          body: body || '',
+          icon: '/logo.png',
+        },
       },
       tokens,
     };

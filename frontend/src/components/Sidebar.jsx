@@ -6,6 +6,7 @@ import {
   HiCalculator, HiCog, HiShieldCheck, HiX,
 } from 'react-icons/hi';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import BrandLogo from './BrandLogo';
 import { ROLES, hasPermission } from '../utils/roles';
 
@@ -54,6 +55,7 @@ const getNavLinks = (role, user, t) => {
 const Sidebar = ({ isOpen, onClose }) => {
   const { pathname } = useLocation();
   const { role, user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const { t } = useTranslation();
   const links = getNavLinks(role, user, t);
 
@@ -94,7 +96,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               className={`nav-link ${isActive(to) ? 'nav-link-active' : 'nav-link-idle'}`}
             >
               <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-              <span className="truncate">{label}</span>
+              <span className="truncate flex-1">{label}</span>
+              {to.endsWith('/notifications') && unreadCount > 0 && (
+                <span className="ml-auto min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[1.15rem] text-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
