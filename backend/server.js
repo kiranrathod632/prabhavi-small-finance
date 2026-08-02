@@ -6,11 +6,11 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import cron from 'node-cron';
 import connectDB from './config/db.js';
 import routes from './routes/index.js';
 import errorHandler, { notFound } from './middlewares/errorHandler.js';
-import { applyOverduePenalties, sendUpcomingReminders, sendTestUpcomingReminders } from './services/penaltyService.js';
+import { applyOverduePenalties } from './services/penaltyService.js';
+import { startSmsCronJobs } from './jobs/smsCron.js';
 
 
 // import dotenv from "dotenv";
@@ -95,50 +95,8 @@ const startServer = async () => {
         try { await applyOverduePenalties(); } catch (e) { console.error('Penalty job:', e.message); }
       }, 60 * 60 * 1000);
 
-      // EMI reminder SMS cron: every day at 10:00 AM IST
-      // Example: EMI due on 5th → SMS on 3rd at 10 AM (2 days before)
-      cron.schedule(
-        '0 10 * * *',
-        async () => {
-          try {
-            console.log('[Cron] Running EMI reminder SMS job at 10:00 AM IST');
-            await sendUpcomingReminders();
-          } catch (e) {
-            console.error('Reminder cron job:', e.message);
-          }
-        },
-        { timezone: 'Asia/Kolkata' }
-      );
-
-      console.log('[Cron] EMI reminder scheduled: daily 10:00 AM Asia/Kolkata (2 days before due)');
-
-      // Every 5 minutes: SMS reminder for pending EMIs due today / kal / next N days
-      // Controlled by EMI_REMINDER_TEST_EVERY_5_MIN=true in .env
-      const enableEvery5Min =
-        String(process.env.EMI_REMINDER_TEST_EVERY_5_MIN || '').trim().toLowerCase() === 'true';
-
-      if (enableEvery5Min) {
-        const runEvery5MinReminder = async (reason) => {
-          try {
-            console.log(`[Cron] EMI reminder every 5 min (${reason})`);
-            await sendTestUpcomingReminders();
-          } catch (e) {
-            console.error('Every-5-min reminder cron:', e.message);
-          }
-        };
-
-        // Send once immediately on server start (aaj se abhi)
-        runEvery5MinReminder('startup');
-
-        cron.schedule(
-          '*/5 * * * *',
-          () => runEvery5MinReminder('scheduled'),
-          { timezone: 'Asia/Kolkata' }
-        );
-        console.log('[Cron] EMI reminder every 5 minutes ENABLED — latest pending EMI(s), any due date');
-      } else {
-        console.log('[Cron] EMI reminder every 5 minutes DISABLED (set EMI_REMINDER_TEST_EVERY_5_MIN=true)');
-      }
+      // SMS reminder crons live in jobs/smsCron.js (not inline here)
+      startSmsCronJobs();
     }
   });
 };

@@ -7,22 +7,15 @@ import Notification from '../models/Notification.js';
 const getTwilioConfig = () => ({
   accountSid: (process.env.TWILIO_ACCOUNT_SID || '').replace(/\s+/g, '').trim(),
   authToken: (process.env.TWILIO_AUTH_TOKEN || '').replace(/\s+/g, '').trim(),
-  phoneNumber: (process.env.TWILIO_PHONE_NUMBER || '').replace(/\s+/g, '').trim(),
+  // Accept TWILIO_PHONE as alias (same as TWILIO_PHONE_NUMBER)
+  phoneNumber: (process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_PHONE || '').replace(/\s+/g, '').trim(),
   messagingServiceSid: (process.env.TWILIO_MESSAGING_SERVICE_SID || '').replace(/\s+/g, '').trim(),
-});
-
-const getFast2SmsConfig = () => ({
-  apiKey: (process.env.SMS_API_KEY || process.env.FAST2SMS_API_KEY || '').trim(),
-  apiUrl: (process.env.SMS_API_URL || 'https://www.fast2sms.com/dev/bulkV2').trim(),
 });
 
 const isPlaceholder = (value = '') =>
   !value ||
   /^your[_-]/i.test(value) ||
   /xxx|replace|changeme|example/i.test(value);
-
-const smsLanguageFor = (message = '') =>
-  /[\u0900-\u097F]/.test(message) ? 'unicode' : 'english';
 
 const getTwilioClient = () => {
   const { accountSid, authToken } = getTwilioConfig();
@@ -37,130 +30,26 @@ const SMS_RATE_LIMIT = {
 };
 
 /**
- * Send SMS via Fast2SMS (preferred for India)
- * Supports OTP route (recommended) and Quick SMS route.
- */
-const sendViaFast2Sms = async ({ mobile, message, otp = null, preferOtpRoute = false }) => {
-  const { apiKey, apiUrl } = getFast2SmsConfig();
-
-  if (isPlaceholder(apiKey)) {
-    return { success: false, error: 'Fast2SMS API key is missing or still a placeholder' };
-  }
-
-  const headers = {
-    authorization: apiKey,
-    'Content-Type': 'application/json',
-    'cache-control': 'no-cache',
-  };
-
-  // 1) Dedicated OTP route — best delivery for OTP in India
-  if (preferOtpRoute && otp) {
-    try {
-      const otpRes = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          route: 'otp',
-          variables_values: String(otp),
-          numbers: mobile,
-          flash: 0,
-        }),
-      });
-      const otpData = await otpRes.json().catch(() => ({}));
-      if (otpRes.ok && otpData.return !== false) {
-        console.log(`[SMS] Fast2SMS OTP route sent to ${mobile}`, otpData.request_id || '');
-        return {
-          success: true,
-          messageId: otpData.request_id || `fast2sms_otp_${Date.now()}`,
-          provider: 'fast2sms',
-          route: 'otp',
-          status: 'sent',
-        };
-      }
-      console.warn(
-        `[SMS] Fast2SMS OTP route failed:`,
-        otpData.message || otpData.error || otpRes.status
-      );
-    } catch (error) {
-      console.warn(`[SMS] Fast2SMS OTP route error:`, error.message);
-    }
-  }
-
-  // 2) Quick SMS route (POST JSON — more reliable than GET)
-  try {
-    const text = message || (otp ? `Your OTP is ${otp}. Valid for 10 minutes.` : 'Notification');
-    const language = smsLanguageFor(text);
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        route: 'q',
-        message: text,
-        language,
-        flash: 0,
-        numbers: mobile,
-      }),
-    });
-
-    const data = await response.json().catch(() => ({}));
-    if (response.ok && data.return !== false) {
-      console.log(`[SMS] Fast2SMS Quick SMS sent to ${mobile}`, data.request_id || data.message || '');
-      return {
-        success: true,
-        messageId: data.request_id || `fast2sms_${Date.now()}`,
-        provider: 'fast2sms',
-        route: 'q',
-        status: 'sent',
-      };
-    }
-
-    // 3) Legacy GET fallback
-    const url = new URL(apiUrl);
-    url.searchParams.set('authorization', apiKey);
-    url.searchParams.set('route', 'q');
-    url.searchParams.set('message', text);
-    url.searchParams.set('language', language);
-    url.searchParams.set('flash', '0');
-    url.searchParams.set('numbers', mobile);
-
-    const getRes = await fetch(url.toString(), {
-      method: 'GET',
-      headers: { authorization: apiKey, 'cache-control': 'no-cache' },
-    });
-    const getData = await getRes.json().catch(() => ({}));
-    if (getRes.ok && getData.return !== false) {
-      console.log(`[SMS] Fast2SMS GET sent to ${mobile}`, getData.request_id || '');
-      return {
-        success: true,
-        messageId: getData.request_id || `fast2sms_get_${Date.now()}`,
-        provider: 'fast2sms',
-        route: 'q-get',
-        status: 'sent',
-      };
-    }
-
-    return {
-      success: false,
-      error:
-        data.message
-        || data.error
-        || getData.message
-        || getData.error
-        || `Fast2SMS failed (${response.status})`,
-      provider: 'fast2sms',
-    };
-  } catch (error) {
-    return { success: false, error: error.message, provider: 'fast2sms' };
-  }
-};
-
-/**
  * Send SMS via Twilio
  * Tries Active Number (from) first, then Messaging Service SID.
  */
 const sendViaTwilio = async ({ mobile, message }) => {
   const formattedNumber = `+91${mobile}`;
   const { accountSid, authToken, phoneNumber, messagingServiceSid } = getTwilioConfig();
+
+  // Check if Twilio is in simulation mode
+  const simulationMode = String(process.env.TWILIO_SIMULATION_MODE || '').trim().toLowerCase() === 'true';
+  
+  if (simulationMode) {
+    console.log(`[SIMULATION] Would send SMS to ${formattedNumber}: ${message.substring(0, 50)}...`);
+    return {
+      success: true,
+      messageId: `SIM_${Date.now()}`,
+      status: 'simulated',
+      provider: 'simulation',
+      note: 'SMS simulation mode - no actual SMS sent'
+    };
+  }
 
   if (!accountSid || !authToken || isPlaceholder(accountSid) || isPlaceholder(authToken)) {
     return { success: false, error: 'Twilio credentials are missing or invalid', provider: 'twilio' };
@@ -233,7 +122,7 @@ const sendViaTwilio = async ({ mobile, message }) => {
           provider: 'twilio',
           error:
             errorMessage
-            || `Twilio status=${finalStatus}. India often blocks loan/EMI SMS from foreign numbers. Enable Messaging → Geo Permissions → India, or use Fast2SMS for India delivery.`,
+            || `Twilio status=${finalStatus}. Check Twilio Monitor → Logs → Messaging, and ensure India geo permissions / verified numbers (trial) are configured.`,
           code: errorCode,
         };
       }
@@ -251,6 +140,17 @@ const sendViaTwilio = async ({ mobile, message }) => {
     } catch (error) {
       lastError = error;
       console.error(`[SMS] Twilio attempt failed:`, error.code, error.message);
+
+      // Handle daily limit exceeded (error code 63038)
+      if (error.code === 63038 || error.message?.includes('exceeded the 50 daily messages limit')) {
+        return {
+          success: false,
+          error: `Twilio daily message limit exceeded. Upgrade from trial or wait until tomorrow.`,
+          provider: 'twilio',
+          code: error.code || 63038,
+          retryAfter: '24h'
+        };
+      }
 
       if (error.code === 21265 || error.code === 21608 || /unverified|trial/i.test(error.message || '')) {
         return {
@@ -308,88 +208,55 @@ const sendViaTwilio = async ({ mobile, message }) => {
 };
 
 /**
- * Send SMS — provider order controlled by SMS_PROVIDER (twilio|fast2sms|auto)
- * @param {{ to: string, message: string, otp?: string, preferOtpRoute?: boolean }}
+ * Send SMS via Twilio
+ * @param {{ to: string, message: string }}
  */
-export const sendSms = async ({ to, message, otp = null, preferOtpRoute = false }) => {
+export const sendSms = async ({ to, message }) => {
   try {
     const mobile = String(to || '').replace(/\D/g, '').slice(-10);
     if (!/^[6-9]\d{9}$/.test(mobile)) {
       return { success: false, error: 'Invalid phone number' };
     }
 
-    const provider = (process.env.SMS_PROVIDER || 'auto').trim().toLowerCase();
-    const { apiKey } = getFast2SmsConfig();
-    const hasFast2Sms = !isPlaceholder(apiKey);
-    const errors = [];
-
-    const tryFast2Sms = async () => {
-      if (!hasFast2Sms) {
-        return { success: false, error: 'Fast2SMS API key not configured' };
+    try {
+      return await sendViaTwilio({ mobile, message });
+    } catch (error) {
+      console.error('Twilio SMS error:', error.message, error.code, error.moreInfo);
+      if (error.code === 21211) return { success: false, error: 'Invalid phone number', provider: 'twilio' };
+      if (error.code === 21614) return { success: false, error: 'Invalid phone number format', provider: 'twilio' };
+      if (error.message === 'Authenticate' || error.code === 20003) {
+        return {
+          success: false,
+          error: 'Twilio auth failed. Check TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN in backend/.env',
+          provider: 'twilio',
+        };
       }
-      return sendViaFast2Sms({
-        mobile,
-        message,
-        otp,
-        preferOtpRoute: preferOtpRoute || Boolean(otp),
-      });
-    };
-
-    const tryTwilio = async () => {
-      try {
-        return await sendViaTwilio({ mobile, message });
-      } catch (error) {
-        console.error('Twilio SMS error:', error.message, error.code, error.moreInfo);
-        if (error.code === 21211) return { success: false, error: 'Invalid phone number', provider: 'twilio' };
-        if (error.code === 21614) return { success: false, error: 'Invalid phone number format', provider: 'twilio' };
-        if (error.message === 'Authenticate' || error.code === 20003) {
-          return {
-            success: false,
-            error: 'Twilio auth failed. Check TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN in backend/.env',
-            provider: 'twilio',
-          };
-        }
-        return { success: false, error: error.message, provider: 'twilio', code: error.code };
-      }
-    };
-
-    // Explicit provider preference
-    if (provider === 'twilio') {
-      const twilioResult = await tryTwilio();
-      if (twilioResult.success) return twilioResult;
-      errors.push(`Twilio: ${twilioResult.error}`);
-      const fastResult = await tryFast2Sms();
-      if (fastResult.success) return fastResult;
-      errors.push(`Fast2SMS: ${fastResult.error}`);
-      return { success: false, error: errors.join(' | ') };
+      return { success: false, error: error.message, provider: 'twilio', code: error.code };
     }
-
-    if (provider === 'fast2sms') {
-      const fastResult = await tryFast2Sms();
-      if (fastResult.success) return fastResult;
-      errors.push(`Fast2SMS: ${fastResult.error}`);
-      const twilioResult = await tryTwilio();
-      if (twilioResult.success) return twilioResult;
-      errors.push(`Twilio: ${twilioResult.error}`);
-      return { success: false, error: errors.join(' | ') };
-    }
-
-    // auto: Fast2SMS first when configured, else Twilio
-    if (hasFast2Sms) {
-      const fastResult = await tryFast2Sms();
-      if (fastResult.success) return fastResult;
-      console.warn(`[SMS] Fast2SMS skipped/failed: ${fastResult.error}`);
-      errors.push(`Fast2SMS: ${fastResult.error}`);
-    }
-
-    const twilioResult = await tryTwilio();
-    if (twilioResult.success) return twilioResult;
-    errors.push(`Twilio: ${twilioResult.error}`);
-    return { success: false, error: errors.join(' | ') };
   } catch (error) {
     console.error('SMS send error:', error.message);
     return { success: false, error: error.message };
   }
+};
+
+// services/smsService.js
+
+/**
+ * Manual test function - sends SMS to a specific number
+ * Use this to test individual SMS without the cron
+ */
+export const manualTestSms = async (mobile, emiNumber, amount, dueDate) => {
+  const simulationMode = String(process.env.TWILIO_SIMULATION_MODE || '').trim().toLowerCase() === 'true';
+  
+  if (simulationMode) {
+    console.log(`[MANUAL TEST] Would send EMI reminder to ${mobile}`);
+    console.log(`[MANUAL TEST] EMI: ${emiNumber}, Amount: ₹${amount}, Due: ${dueDate}`);
+    return { success: true, mode: 'simulation' };
+  }
+
+  const result = await sendEmiReminderSms(mobile, emiNumber, amount, dueDate);
+  console.log(`[MANUAL TEST] Result:`, result);
+  return result;
 };
 
 /**
@@ -465,8 +332,7 @@ export const sendOtpSms = async (mobile, otp, purpose = 'registration') => {
   };
 
   const message = messages[purpose] || `Your FinanceLoan OTP is ${otp}. Valid for 10 minutes. Do not share with anyone.`;
-  // preferOtpRoute uses Fast2SMS OTP channel for better India delivery
-  return sendSms({ to: mobile, message, otp: String(otp), preferOtpRoute: true });
+  return sendSms({ to: mobile, message });
 };
 
 /**

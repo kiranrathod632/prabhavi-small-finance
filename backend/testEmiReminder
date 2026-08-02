@@ -1,0 +1,51 @@
+// scripts/testEmiReminder.js
+// Run with: node scripts/testEmiReminder.js
+
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import EMI from '../models/EMI.js';
+import User from '../models/User.js';
+
+dotenv.config();
+
+async function testEMIData() {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB');
+
+    // Find EMIs that would be processed
+    const pendingEmis = await EMI.find({
+      status: { $in: ['pending', 'partial', 'overdue'] },
+      isDeleted: { $ne: true },
+    })
+      .sort({ dueDate: 1 })
+      .limit(5)
+      .populate('user', 'name email mobile mobile_number')
+      .populate('loan', 'loanId');
+
+    console.log(`\nFound ${pendingEmis.length} pending EMIs:\n`);
+    
+    for (const emi of pendingEmis) {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(`EMI Number: ${emi.emiNumber}`);
+      console.log(`Loan ID: ${emi.loan?.loanId || 'N/A'}`);
+      console.log(`Due Date: ${emi.dueDate}`);
+      console.log(`Status: ${emi.status}`);
+      console.log(`Amount: ₹${emi.amount}`);
+      console.log(`Pending Amount: ₹${emi.pendingAmount || emi.amount}`);
+      console.log(`User: ${emi.user?.name || 'N/A'}`);
+      console.log(`Mobile: ${emi.user?.mobile || emi.user?.mobile_number || 'N/A'}`);
+      console.log(`Email: ${emi.user?.email || 'N/A'}`);
+      console.log(`Reminder Sent At: ${emi.reminderSmsSentAt || 'Never'}`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    }
+
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
+  } catch (error) {
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+testEMIData();

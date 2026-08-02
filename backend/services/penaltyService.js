@@ -152,6 +152,9 @@ export const sendUpcomingReminders = async () => {
 export const sendTestUpcomingReminders = async () => {
   const limit = Math.max(1, parseInt(process.env.EMI_REMINDER_TEST_LIMIT || '1', 10) || 1);
 
+  // Check if we should use simulation mode
+  const simulationMode = String(process.env.TWILIO_SIMULATION_MODE || '').trim().toLowerCase() === 'true';
+
   const pendingEmis = await EMI.find({
     status: { $in: ['pending', 'partial', 'overdue'] },
     isDeleted: { $ne: true },
@@ -163,14 +166,27 @@ export const sendTestUpcomingReminders = async () => {
 
   let sent = 0;
   let failed = 0;
+  let rateLimited = 0;
+  let skipped = 0;
 
-  console.log(`[EMI Test Reminder] Latest pending EMIs (any due date) | matching=${pendingEmis.length}`);
+  console.log(`[EMI Test Reminder] Latest pending EMIs (any due date) | matching=${pendingEmis.length} | simulation=${simulationMode}`);
 
   for (const emi of pendingEmis) {
     const userMobile = emi.user?.mobile_number || emi.user?.mobile;
     if (!userMobile) {
       console.warn(`[EMI Test Reminder] No mobile for EMI ${emi.emiNumber}`);
+      skipped++;
       continue;
+    }
+
+    // Check if we already sent a reminder recently (rate limit per EMI)
+    if (!simulationMode && emi.reminderSmsSentAt) {
+      const hoursSinceLastSent = (Date.now() - new Date(emi.reminderSmsSentAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceLastSent < 4) {
+        console.log(`[EMI Test Reminder] Skipping ${emi.emiNumber} - last sent ${hoursSinceLastSent.toFixed(1)} hours ago`);
+        skipped++;
+        continue;
+      }
     }
 
     const payAmount = emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount;
@@ -190,19 +206,28 @@ export const sendTestUpcomingReminders = async () => {
         await emi.save({ validateBeforeSave: false });
       }
       console.log(
-        `[EMI Test Reminder] SMS OK → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(smsAmount)} | due=${emi.dueDate?.toISOString?.() || emi.dueDate}`
+        `[EMI Test Reminder] ✅ SMS OK → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(smsAmount)} | due=${emi.dueDate?.toISOString?.() || emi.dueDate}`
       );
     } else {
       failed += 1;
-      console.error(
-        `[EMI Test Reminder] SMS FAIL → ${userMobile} | ${emi.emiNumber}:`,
-        smsResult?.error || 'unknown'
-      );
+      // Check if it's a rate limit error
+      if (smsResult?.code === 63038 || smsResult?.error?.includes('daily message limit')) {
+        rateLimited += 1;
+        console.error(
+          `[EMI Test Reminder] ⚠️ RATE LIMITED → ${userMobile} | ${emi.emiNumber}: ${smsResult?.error}`
+        );
+      } else {
+        console.error(
+          `[EMI Test Reminder] ❌ SMS FAIL → ${userMobile} | ${emi.emiNumber}:`,
+          smsResult?.error || 'unknown'
+        );
+      }
     }
   }
 
   console.log(
-    `[EMI Test Reminder] Done | found=${pendingEmis.length} | sent=${sent} | failed=${failed}`
+    `[EMI Test Reminder] Done | found=${pendingEmis.length} | sent=${sent} | failed=${failed} | rateLimited=${rateLimited} | skipped=${skipped}`
   );
-  return { sent, failed, total: pendingEmis.length };
+  
+  return { sent, failed, rateLimited, skipped, total: pendingEmis.length };
 };
