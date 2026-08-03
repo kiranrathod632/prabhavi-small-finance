@@ -104,9 +104,19 @@ export const getUser = asyncHandler(async (req, res) => {
   });
 });
 
+const buildFullName = (firstName, middleName, lastName, fallbackName = '') => {
+  const composed = [firstName, middleName, lastName]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return composed || (fallbackName || '').trim();
+};
+
 export const createUser = asyncHandler(async (req, res) => {
   const {
-    name,
+    firstName,
+    middleName,
+    lastName,
     credential, // New field
     password,
     role,
@@ -114,6 +124,11 @@ export const createUser = asyncHandler(async (req, res) => {
     mobile, // Keep for backward compatibility
     adminId,
   } = req.body;
+
+  const fullName = buildFullName(firstName, middleName, lastName, req.body.name);
+  if (!fullName) {
+    return sendError(res, 400, 'First name and last name are required');
+  }
 
   let userEmail = null;
   let userMobile = null;
@@ -239,16 +254,26 @@ export const createUser = asyncHandler(async (req, res) => {
     registrationMethod = 'email'; // Default to email if both
   }
 
+  // End-users: mobile required (same as registration)
+  if (userRole === ROLES.USER && !userMobile) {
+    return sendError(res, 400, 'Mobile number is required');
+  }
+
   // Create user
   const userData = {
-    name,
+    name: fullName,
     password,
     role: userRole,
     createdBy: req.user._id,
     registrationMethod,
     isEmailVerified: !!userEmail,
     isMobileVerified: !!userMobile,
+    profileSetupComplete: userRole === ROLES.USER,
   };
+
+  if (firstName?.trim()) userData.firstName = firstName.trim();
+  if (middleName?.trim()) userData.middleName = middleName.trim();
+  if (lastName?.trim()) userData.lastName = lastName.trim();
 
   // Only add adminId if assigned
   if (assignedAdminId) {
@@ -264,7 +289,7 @@ export const createUser = asyncHandler(async (req, res) => {
 
   const user = await User.create(userData);
 
-  // Create profile
+  // Create profile (phone mirrors registration / complete-profile)
   await Profile.create({
     user: user._id,
     phone: phone || userMobile || '',
@@ -277,7 +302,7 @@ export const createUser = asyncHandler(async (req, res) => {
       await createNotification({
         user: admin._id,
         title: 'New User Created',
-        message: `${name} was added under your account. Their loans will earn you commission.`,
+        message: `${fullName} was added under your account. Their loans will earn you commission.`,
         type: 'info',
       });
     }
@@ -297,7 +322,18 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
-  const { name, email, role, isActive, isSuspended, walletBalance, adminId } = req.body;
+  const {
+    name,
+    firstName,
+    middleName,
+    lastName,
+    email,
+    role,
+    isActive,
+    isSuspended,
+    walletBalance,
+    adminId,
+  } = req.body;
 
   const user = await User.findById(req.params.id);
   if (!user) return sendError(res, 404, 'User not found');
@@ -311,7 +347,14 @@ export const updateUser = asyncHandler(async (req, res) => {
     }
   }
 
-  if (name) user.name = name;
+  if (firstName !== undefined) user.firstName = (firstName || '').trim();
+  if (middleName !== undefined) user.middleName = (middleName || '').trim();
+  if (lastName !== undefined) user.lastName = (lastName || '').trim();
+
+  const composedName = buildFullName(user.firstName, user.middleName, user.lastName, name || user.name);
+  if (composedName) user.name = composedName;
+  else if (name) user.name = name;
+
   if (email) user.email = email;
   if (role && req.user.role === ROLES.SUPER_ADMIN) user.role = role;
   if (adminId && req.user.role === ROLES.SUPER_ADMIN) user.adminId = adminId;

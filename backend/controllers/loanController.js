@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Fund from '../models/Fund.js';
 import Transaction from '../models/Transaction.js';
 import { asyncHandler, sendResponse, sendError } from '../utils/apiResponse.js';
-import { paginate, paginationMeta, isStaffRole } from '../utils/helpers.js';
+import { paginate, paginationMeta, isStaffRole, calculateLoanPlan } from '../utils/helpers.js';
 import { createAuditLog } from '../services/auditService.js';
 import { notifyLoanUpdate } from '../services/notificationService.js';
 import { sendLoanStatusEmail } from '../services/emailService.js';
@@ -172,7 +172,7 @@ export const getLoans = asyncHandler(async (req, res) => {
   const filter = andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
 
   const [loans, total] = await Promise.all([
-    Loan.find(filter).populate('user', 'name email').sort(sort).skip(skip).limit(limit),
+    Loan.find(filter).populate('user', 'name firstName middleName lastName email').sort(sort).skip(skip).limit(limit),
     Loan.countDocuments(filter),
   ]);
 
@@ -306,7 +306,20 @@ export const updateLoan = asyncHandler(async (req, res) => {
   const loan = await Loan.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!loan) return sendError(res, 404, 'Loan not found');
 
-  const { status, interestRate, processingFee, gstAmount, rejectedReason, remarks, approvedAmount, tenure, emiStartDate, dueDate } = req.body;
+  const {
+    status,
+    interestRate,
+    interestType,
+    interestRatePeriod,
+    processingFee,
+    gstAmount,
+    rejectedReason,
+    remarks,
+    approvedAmount,
+    tenure,
+    emiStartDate,
+    dueDate,
+  } = req.body;
   const staff = isStaffRole(req.user.role);
 
   if (staff && req.user.role !== ROLES.SUPER_ADMIN && loan.adminId && !canAccessAdminScope(req.user, loan.adminId, loan.status)) {
@@ -327,86 +340,119 @@ export const updateLoan = asyncHandler(async (req, res) => {
     await loan.save();
     
   } else if (status === 'approved' && staff) {
-    // ✅ APPROVED = DIRECTLY ACTIVE/DISBURSED
-    
+    // Idempotent: only pending / under_review loans can be approved once
+    if (!['pending', 'under_review'].includes(loan.status)) {
+      return sendError(res, 400, 'Loan already approved or cannot be approved in current status');
+    }
+
+    // Atomic claim — prevents double-click / parallel approvals
+    const claim = await Loan.findOneAndUpdate(
+      { _id: loan._id, status: { $in: ['pending', 'under_review'] } },
+      {
+        $set: {
+          status: 'approved',
+          approvedBy: req.user._id,
+          approvedAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+    if (!claim) {
+      return sendError(res, 400, 'Loan already approved or cannot be approved in current status');
+    }
+
+    const freshLoan = claim;
+
     // 1. Update loan details
-    if (interestRate) loan.interestRate = parseFloat(interestRate);
-    if (approvedAmount) loan.approvedAmount = Number(approvedAmount);
-    if (tenure) loan.tenure = Number(tenure);
-    if (emiStartDate) loan.emiStartDate = new Date(emiStartDate);
-    if (dueDate) loan.dueDate = new Date(dueDate);
+    if (interestRate !== undefined && interestRate !== null && interestRate !== '') {
+      freshLoan.interestRate = parseFloat(interestRate);
+    }
+    if (interestType && ['flat', 'reducing_balance'].includes(interestType)) {
+      freshLoan.interestType = interestType;
+    }
+    if (interestRatePeriod && ['monthly', 'yearly'].includes(interestRatePeriod)) {
+      freshLoan.interestRatePeriod = interestRatePeriod;
+    }
+    if (approvedAmount) freshLoan.approvedAmount = Number(approvedAmount);
+    if (tenure) freshLoan.tenure = Number(tenure);
+    if (emiStartDate) freshLoan.emiStartDate = new Date(emiStartDate);
+    if (dueDate) freshLoan.dueDate = new Date(dueDate);
     
     // 2. Processing fee & GST
     if (processingFee !== undefined && processingFee !== null) {
-      loan.processingFee = Number(processingFee) || 0;
+      freshLoan.processingFee = Number(processingFee) || 0;
     }
     if (gstAmount !== undefined && gstAmount !== null) {
-      loan.gstAmount = Number(gstAmount) || 0;
+      freshLoan.gstAmount = Number(gstAmount) || 0;
     }
     
     // 3. Calculate net disbursed amount
-    const baseAmount = loan.approvedAmount || loan.amount;
-    const netDisbursed = Math.max(0, baseAmount - (loan.processingFee || 0) - (loan.gstAmount || 0));
-    loan.netDisbursedAmount = netDisbursed;
-    loan.disbursedAmount = netDisbursed;
+    const baseAmount = freshLoan.approvedAmount || freshLoan.amount;
+    const netDisbursed = Math.max(0, baseAmount - (freshLoan.processingFee || 0) - (freshLoan.gstAmount || 0));
+    freshLoan.netDisbursedAmount = netDisbursed;
+    freshLoan.disbursedAmount = netDisbursed;
     
-    // 4. Calculate EMI if tenure is provided
-    if (loan.tenure && loan.interestRate) {
-      const emi = calculateEMI(loan.amount, loan.interestRate, loan.tenure);
-      loan.emiAmount = emi;
-      loan.totalPayable = emi * loan.tenure;
-      loan.totalInterest = loan.totalPayable - loan.amount;
-      loan.totalEmis = loan.tenure;
-      loan.remainingBalance = loan.totalPayable;
-      loan.totalOutstanding = loan.totalPayable;
+    // 4. Calculate EMI if tenure is provided (supports flat + reducing)
+    // interestRate is treated as annual % — same as previous calculateEMI behavior
+    if (freshLoan.tenure && freshLoan.interestRate) {
+      const plan = calculateLoanPlan({
+        principal: freshLoan.amount,
+        annualRate: freshLoan.interestRate,
+        tenureMonths: freshLoan.tenure,
+        interestType: freshLoan.interestType || 'reducing_balance',
+      });
+      freshLoan.emiAmount = plan.emiAmount;
+      freshLoan.totalPayable = plan.totalPayable;
+      freshLoan.totalInterest = plan.totalInterest;
+      freshLoan.totalEmis = freshLoan.tenure;
+      freshLoan.remainingBalance = plan.totalPayable;
+      freshLoan.totalOutstanding = plan.totalPayable;
     }
     
     // 5. Set loan as active/disbursed
-    loan.status = 'active';
-    loan.approvedBy = req.user._id;
-    loan.approvedAt = new Date();
-    loan.disbursedAt = new Date();
-    loan.disbursedBy = req.user._id;
-    loan.startDate = new Date();
-    loan.processingFeeDeductedAt = new Date();
+    freshLoan.status = 'active';
+    freshLoan.disbursedAt = new Date();
+    freshLoan.disbursedBy = req.user._id;
+    freshLoan.startDate = new Date();
+    freshLoan.processingFeeDeductedAt = new Date();
     
     // Set end date
-    if (loan.tenure) {
+    if (freshLoan.tenure) {
       const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + loan.tenure);
-      loan.endDate = endDate;
+      endDate.setMonth(endDate.getMonth() + freshLoan.tenure);
+      freshLoan.endDate = endDate;
     }
     
     // 6. Save loan first
-    await loan.save();
+    await freshLoan.save();
     
     // 7. ✅ UPDATE FUND - Deduct disbursed amount from fund
     try {
-      await updateFundForDisbursement(loan, req.user._id, netDisbursed);
+      await updateFundForDisbursement(freshLoan, req.user._id, netDisbursed);
     } catch (error) {
       // Revert loan status if fund update fails
-      loan.status = 'approved';
-      await loan.save();
+      freshLoan.status = 'approved';
+      await freshLoan.save();
       return sendError(res, 400, error.message);
     }
     
     // 8. ✅ CREDIT USER WALLET - Add net disbursed amount to user's wallet
     try {
-      await creditUserWallet(loan, netDisbursed, req.user._id);
+      await creditUserWallet(freshLoan, netDisbursed, req.user._id);
     } catch (error) {
       // Log error but don't fail the whole process
       console.error('Failed to credit wallet:', error);
     }
     
     // 9. Generate EMIs
-    if (loan.tenure && loan.emiAmount) {
-      await generateEMIs(loan);
+    if (freshLoan.tenure && freshLoan.emiAmount) {
+      await generateEMIs(freshLoan);
     }
     
     // 10. Add timeline events
     await addTimelineEvent({ 
-      loan, 
-      user: loan.user, 
+      loan: freshLoan, 
+      user: freshLoan.user, 
       status: 'approved', 
       title: 'Loan Approved & Disbursed',
       description: `Loan approved for ₹${baseAmount}. Net disbursed: ₹${netDisbursed} credited to wallet`,
@@ -414,30 +460,30 @@ export const updateLoan = asyncHandler(async (req, res) => {
     });
     
     await addTimelineEvent({ 
-      loan, 
-      user: loan.user, 
+      loan: freshLoan, 
+      user: freshLoan.user, 
       status: 'active', 
       title: 'Loan Active',
-      description: `EMI of ₹${loan.emiAmount || 0} for ${loan.tenure || 0} months`,
+      description: `EMI of ₹${freshLoan.emiAmount || 0} for ${freshLoan.tenure || 0} months`,
       performedBy: req.user._id 
     });
     
     // 11. Create commission
-    await createCommissionForLoan(loan);
+    await createCommissionForLoan(freshLoan);
     
     // 12. Send notifications
-    await notifyLoanUpdate(loan.user, loan, 'active');
-    const user = await User.findById(loan.user);
+    await notifyLoanUpdate(freshLoan.user, freshLoan, 'active');
+    const user = await User.findById(freshLoan.user);
     const userMobile = user?.mobile_number || user?.mobile;
-    if (user?.email) await sendLoanStatusEmail(user, loan, 'active');
-    if (userMobile) await sendLoanStatusSms(userMobile, loan.loanId, 'approved');
+    if (user?.email) await sendLoanStatusEmail(user, freshLoan, 'active');
+    if (userMobile) await sendLoanStatusSms(userMobile, freshLoan.loanId, 'approved');
     
     await createNotification({
-      user: loan.user,
+      user: freshLoan.user,
       title: 'Loan Approved & Disbursed',
       message: `Your loan of ₹${baseAmount} has been approved. ₹${netDisbursed} has been credited to your wallet.`,
       type: 'loan',
-      link: `/loans/${loan._id}`,
+      link: `/loans/${freshLoan._id}`,
     });
     
   } else if (status === 'rejected' && staff) {
@@ -477,7 +523,7 @@ export const updateLoan = asyncHandler(async (req, res) => {
     ipAddress: req.ip,
   });
 
-  const updated = await Loan.findById(loan._id).populate('user', 'name email walletBalance');
+  const updated = await Loan.findById(loan._id).populate('user', 'name firstName middleName lastName email walletBalance');
   sendResponse(res, 200, 'Loan updated', updated);
 });
 
@@ -564,6 +610,15 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
 
 // ✅ NEW: Helper function to credit user wallet
 const creditUserWallet = async (loan, netDisbursed, performedBy) => {
+  // Idempotent: skip if wallet already credited for this loan
+  const existingCredit = await Transaction.findOne({
+    loan: loan._id,
+    type: 'loan_disbursement',
+    reference: loan.loanId,
+    status: 'completed',
+  });
+  if (existingCredit) return null;
+
   const user = await User.findById(loan.user);
   if (!user) {
     throw new Error('User not found');
@@ -605,44 +660,33 @@ const creditUserWallet = async (loan, netDisbursed, performedBy) => {
   return user;
 };
 
-// Helper function to calculate EMI
-const calculateEMI = (principal, annualRate, tenureMonths) => {
-  const monthlyRate = annualRate / 12 / 100;
-  if (monthlyRate === 0) return principal / tenureMonths;
-  const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
-              (Math.pow(1 + monthlyRate, tenureMonths) - 1);
-  return Math.round(emi * 100) / 100;
-};
-
-// Helper function to generate EMIs
+// Helper function to generate EMIs (flat + reducing_balance)
 const generateEMIs = async (loan) => {
-  const emis = [];
-  const monthlyRate = loan.interestRate / 12 / 100;
-  let remainingBalance = loan.amount;
-  
-  for (let i = 1; i <= loan.tenure; i++) {
-    const interest = remainingBalance * monthlyRate;
-    const principal = loan.emiAmount - interest;
-    remainingBalance -= principal;
-    
-    const dueDate = new Date(loan.disbursedAt || loan.approvedAt || new Date());
-    dueDate.setMonth(dueDate.getMonth() + i);
-    
-    emis.push({
-      loan: loan._id,
-      user: loan.user,
-      emiNumber: `${loan.loanId}-EMI-${String(i).padStart(2, '0')}`,
-      amount: Math.round(loan.emiAmount * 100) / 100,
-      principal: Math.round(principal * 100) / 100,
-      interest: Math.round(interest * 100) / 100,
-      remainingBalance: Math.max(0, Math.round(remainingBalance * 100) / 100),
-      dueDate,
-      status: 'pending',
-      penalty: 0,
-      paidAmount: 0,
-      pendingAmount: Math.round(loan.emiAmount * 100) / 100,
-    });
-  }
+  const existing = await EMI.countDocuments({ loan: loan._id, isDeleted: { $ne: true } });
+  if (existing > 0) return; // idempotent — do not create duplicate EMI rows
+
+  const plan = calculateLoanPlan({
+    principal: loan.amount,
+    annualRate: loan.interestRate,
+    tenureMonths: loan.tenure,
+    interestType: loan.interestType || 'reducing_balance',
+    startDate: loan.disbursedAt || loan.approvedAt || new Date(),
+  });
+
+  const emis = plan.schedule.map((row, idx) => ({
+    loan: loan._id,
+    user: loan.user,
+    emiNumber: `${loan.loanId}-EMI-${String(idx + 1).padStart(2, '0')}`,
+    amount: Math.round(row.amount * 100) / 100,
+    principal: Math.round(row.principal * 100) / 100,
+    interest: Math.round(row.interest * 100) / 100,
+    remainingBalance: Math.max(0, Math.round(row.remainingBalance * 100) / 100),
+    dueDate: row.dueDate,
+    status: 'pending',
+    penalty: 0,
+    paidAmount: 0,
+    pendingAmount: Math.round(row.amount * 100) / 100,
+  }));
   
   if (emis.length > 0) {
     await EMI.insertMany(emis);

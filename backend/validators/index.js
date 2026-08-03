@@ -5,7 +5,6 @@ const isValidMobile = (value) => /^[6-9]\d{9}$/.test(value);
 const isValidCredential = (value) => isValidEmail(value) || isValidMobile(value);
 
 export const registerValidator = [
-  body('name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
   body('firstName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
   body('middleName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
   body('lastName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
@@ -183,7 +182,6 @@ export const loginValidator = [
 
 
 export const adminRegisterValidator = [
-  body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 100 }),
 
   body('credential')
     .optional({ values: 'falsy' })
@@ -331,6 +329,9 @@ export const changePasswordValidator = [
 // User validators
 export const updateUserValidator = [
   body('name').optional().trim().isLength({ max: 100 }),
+  body('firstName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('middleName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('lastName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
 
   // Updated email validator
   body('email')
@@ -371,7 +372,25 @@ export const updateUserValidator = [
 ];
 
 export const createUserValidator = [
-  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
+  body('firstName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('middleName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('lastName').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body().custom((_, { req }) => {
+    const fullName = [req.body.firstName, req.body.middleName, req.body.lastName]
+      .map((part) => (part || '').trim())
+      .filter(Boolean)
+      .join(' ');
+    if (!fullName && !(req.body.name || '').trim()) {
+      throw new Error('First name and last name are required');
+    }
+    if (req.body.firstName || req.body.lastName) {
+      if (!req.body.firstName?.trim() || !req.body.lastName?.trim()) {
+        throw new Error('First name and last name are required');
+      }
+    }
+    return true;
+  }),
 
   // Primary credential field
   body('credential')
@@ -392,7 +411,7 @@ export const createUserValidator = [
       return value.trim();
     }),
 
-  // Backward compatibility fields
+  // Email optional (same as user registration)
   body('email')
     .optional({ values: 'falsy' })
     .trim()
@@ -416,12 +435,17 @@ export const createUserValidator = [
     .isMongoId()
     .withMessage('Invalid Admin selected'),
 
-  // Custom validator to ensure at least one credential is provided
+  // End-users: mobile required (like registration). Admins may use email/credential.
   body().custom((value, { req }) => {
-    const { credential, email, mobile } = req.body;
+    const { credential, email, mobile, role } = req.body;
     const hasCredential = credential && credential.trim().length > 0;
     const hasEmail = email && email.trim().length > 0;
     const hasMobile = mobile && mobile.trim().length > 0;
+    const userRole = role || 'user';
+
+    if (userRole === 'user' && !hasMobile && !(hasCredential && isValidMobile(credential))) {
+      throw new Error('Mobile number is required');
+    }
 
     if (!hasCredential && !hasEmail && !hasMobile) {
       throw new Error('At least one credential (email or mobile) is required');
@@ -456,6 +480,9 @@ export const updateLoanValidator = [
     'pending', 'under_review', 'approved', 'rejected', 'disbursed', 'active', 'closed', 'defaulted', 'cancelled',
   ]),
   body('interestRate').optional().isFloat({ min: 0, max: 50 }),
+  body('interestType').optional().isIn(['flat', 'reducing_balance']),
+  body('interestRatePeriod').optional().isIn(['monthly', 'yearly']),
+  body('tenure').optional().isInt({ min: 1, max: 360 }),
   body('processingFee').optional().isFloat({ min: 0 }),
   body('gstAmount').optional().isFloat({ min: 0 }),
   body('rejectedReason').optional().trim(),

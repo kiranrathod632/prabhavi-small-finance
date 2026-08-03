@@ -6,7 +6,6 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters'],
     },
@@ -164,11 +163,11 @@ const composeFullName = (firstName, middleName, lastName) =>
 
 // Keep legacy `name` in sync when name parts are updated
 userSchema.pre('save', function () {
-  if (
+  const partsChanged =
     this.isModified('firstName') ||
     this.isModified('middleName') ||
-    this.isModified('lastName')
-  ) {
+    this.isModified('lastName');
+  if (partsChanged || !(this.name || '').trim()) {
     const composed = composeFullName(this.firstName, this.middleName, this.lastName);
     if (composed) this.name = composed;
   }

@@ -103,8 +103,7 @@ const buildFullName = (firstName, middleName, lastName, fallbackName = '') => {
 };
 
 export const register = asyncHandler(async (req, res) => {
-  const { 
-    name, 
+  const {  
     firstName,
     middleName,
     lastName,
@@ -116,7 +115,7 @@ export const register = asyncHandler(async (req, res) => {
     adminId 
   } = req.body;
 
-  const fullName = buildFullName(firstName, middleName, lastName, name);
+  const fullName = buildFullName(firstName, middleName, lastName,);
   if (!fullName) {
     return sendError(res, 400, 'Name is required');
   }
