@@ -214,91 +214,52 @@ const AdminEMIs = () => {
     </>
   );
 
-  const renderEmiList = (list, { collectOnly = false, emptyKey = 'noData' } = {}) => (
-    <>
-      <div className="mobile-list">
-        {list.map((emi) => (
-          <div key={emi._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title">
-                  {t('adminEmis.emiNumber')} #{emi.emiNumber} · {emi.loan?.loanId}
-                </p>
-                <p className="mobile-list-meta mt-0.5">
-                  {emi.user?.name}
-                  {emi.user?.mobile ? ` · ${emi.user.mobile}` : ''}
-                </p>
-              </div>
-              <Badge status={emi.status} />
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span>{formatCurrency(emi.amount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('adminEmis.paid')}</label>
-                <span>{formatCurrency(emi.paidAmount || 0)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('emi.penalty')}</label>
-                <span>{formatCurrency(emi.penalty)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('emi.dueDate')}</label>
-                <span>{formatDate(emi.dueDate)}</span>
-              </div>
-            </div>
-            <div className="mobile-list-actions">{emiActions(emi, { collectOnly })}</div>
-          </div>
-        ))}
-        {!list.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t(emptyKey)}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t('adminEmis.emiNumber')}</th>
-                <th>{t('table.user')}</th>
-                <th>{t('table.mobile')}</th>
-                <th>{t('adminEmis.loan')}</th>
-                <th className="text-right">{t('table.amount')}</th>
-                <th className="text-right">{t('adminEmis.paid')}</th>
-                <th className="text-right">{t('emi.penalty')}</th>
-                <th>{t('emi.dueDate')}</th>
-                <th>{t('table.status')}</th>
-                <th className="text-right">{t('table.actions')}</th>
+  const renderEmiList = (list, { collectOnly = false, emptyKey = 'noData', pageNum = 1 } = {}) => (
+    <div className="card">
+      <div className="data-table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{t('table.srNo')}</th>
+              <th>{t('adminEmis.emiNumber')}</th>
+              <th>{t('table.user')}</th>
+              <th>{t('table.mobile')}</th>
+              <th>{t('adminEmis.loan')}</th>
+              <th className="text-right">{t('table.amount')}</th>
+              <th className="text-right">{t('adminEmis.paid')}</th>
+              <th className="text-right">{t('emi.penalty')}</th>
+              <th>{t('emi.dueDate')}</th>
+              <th>{t('table.status')}</th>
+              <th className="text-right">{t('table.actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((emi, index) => (
+              <tr key={emi._id}>
+                <td className="text-slate-500">{(pageNum - 1) * 10 + index + 1}</td>
+                <td>{emi.emiNumber}</td>
+                <td>{emi.user?.name || 'N/A'}</td>
+                <td>{emi.user?.mobile || emi.user?.mobile_number || 'N/A'}</td>
+                <td>{emi.loan?.loanId || 'N/A'}</td>
+                <td className="text-right">{formatCurrency(emi.amount)}</td>
+                <td className="text-right">{formatCurrency(emi.paidAmount || 0)}</td>
+                <td className="text-right">{formatCurrency(emi.penalty)}</td>
+                <td className="whitespace-nowrap">{formatDate(emi.dueDate)}</td>
+                <td><Badge status={emi.status} /></td>
+                <td className="text-right !whitespace-nowrap">
+                  <div className="table-actions flex !flex-row !flex-nowrap items-center gap-1 justify-end whitespace-nowrap">
+                    {emiActions(emi, { collectOnly })}
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {list.map((emi) => (
-                <tr key={emi._id}>
-                  <td>{emi.emiNumber}</td>
-                  <td>{emi.user?.name}</td>
-                  <td>{emi.user?.mobile || '-'}</td>
-                  <td>{emi.loan?.loanId}</td>
-                  <td className="text-right">{formatCurrency(emi.amount)}</td>
-                  <td className="text-right">{formatCurrency(emi.paidAmount || 0)}</td>
-                  <td className="text-right">{formatCurrency(emi.penalty)}</td>
-                  <td>{formatDate(emi.dueDate)}</td>
-                  <td><Badge status={emi.status} /></td>
-                  <td className="text-right">
-                    <div className="inline-flex flex-wrap gap-1 justify-end">{emiActions(emi, { collectOnly })}</div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!list.length && (
-          <p className="p-4 text-center text-slate-500 text-sm">{t(emptyKey)}</p>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
-    </>
+      {!list.length && (
+        <p className="p-4 text-center text-slate-500 text-sm">{t(emptyKey)}</p>
+      )}
+    </div>
   );
 
   if (loading && !emis.length && !latestEmis.length) return <PageLoader />;
@@ -328,7 +289,7 @@ const AdminEMIs = () => {
       {activeTab === 'collection' && (
         <>
           <p className="text-xs text-slate-500">{t('adminEmis.collectionHint')}</p>
-          {renderEmiList(emis, { collectOnly: true, emptyKey: 'adminEmis.noCollection' })}
+          {renderEmiList(emis, { collectOnly: true, emptyKey: 'adminEmis.noCollection', pageNum: page })}
           <Pagination meta={meta} onPageChange={setPage} />
 
           <div className="space-y-2 pt-2">
@@ -336,7 +297,7 @@ const AdminEMIs = () => {
               {t('adminEmis.latestTitle')}
             </h3>
             <p className="text-xs text-slate-500">{t('adminEmis.latestHint')}</p>
-            {renderEmiList(latestEmis, { emptyKey: 'noData' })}
+            {renderEmiList(latestEmis, { emptyKey: 'noData', pageNum: 1 })}
           </div>
         </>
       )}
@@ -348,7 +309,7 @@ const AdminEMIs = () => {
               {t('adminEmis.latestTitle')}
             </h3>
             <p className="text-xs text-slate-500">{t('adminEmis.latestHint')}</p>
-            {renderEmiList(latestEmis, { emptyKey: 'noData' })}
+            {renderEmiList(latestEmis, { emptyKey: 'noData', pageNum: 1 })}
           </div>
 
           <div className="filter-bar">
@@ -362,7 +323,7 @@ const AdminEMIs = () => {
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
             {t('adminEmis.allEmisTitle')}
           </h3>
-          {renderEmiList(emis)}
+          {renderEmiList(emis, { pageNum: page })}
           <Pagination meta={meta} onPageChange={setPage} />
         </>
       )}

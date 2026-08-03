@@ -183,87 +183,12 @@ const AdminPurchases = () => {
         </select>
       </div>
 
-      <div className="mobile-list">
-        {purchases.map((p) => (
-          <div key={p._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                {isSuperAdmin ? (
-                  <>
-                    <p className="mobile-list-title">{adminName(p)}</p>
-                    <p className="mobile-list-meta">{p.itemName}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="mobile-list-title">{p.itemName}</p>
-                    {p.description ? <p className="mobile-list-meta">{p.description}</p> : null}
-                  </>
-                )}
-              </div>
-              <Badge status={p.status} />
-            </div>
-            <div className="mobile-list-grid">
-              {isSuperAdmin && (
-                <div className="mobile-list-field col-span-2">
-                  <label>{t('adminPurchases.item') || 'Item'}</label>
-                  <span>{p.itemName}</span>
-                </div>
-              )}
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span>{formatCurrency(p.amount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('adminPurchases.date') || 'Date'}</label>
-                <span>{formatDate(p.purchaseDate)}</span>
-              </div>
-              {p.description && (
-                <div className="mobile-list-field col-span-2">
-                  <label>{t('table.description')}</label>
-                  <span>{p.description}</span>
-                </div>
-              )}
-              {p.billPhoto && (
-                <div className="mobile-list-field col-span-2">
-                  <label>{t('adminPurchases.bill') || 'Bill'}</label>
-                  <a href={billUrl(p.billPhoto)} target="_blank" rel="noreferrer" className="link-accent">
-                    View
-                  </a>
-                </div>
-              )}
-            </div>
-            {isSuperAdmin && p.status === 'pending' && (
-              <div className="mobile-list-actions">
-                <button
-                  type="button"
-                  className="btn-success action-chip"
-                  disabled={!!actionId}
-                  onClick={() => handleApprove(p._id)}
-                >
-                  <HiCheck className="w-3 h-3" /> {t('loan.approve') || 'Approve'}
-                </button>
-                <button
-                  type="button"
-                  className="btn-danger action-chip"
-                  disabled={!!actionId}
-                  onClick={() => handleReject(p._id)}
-                >
-                  <HiX className="w-3 h-3" /> {t('loan.reject') || 'Reject'}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-        {!purchases.length && (
-          <p className="py-6 text-center text-[11px] text-slate-500">{t('noData')}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
+      <div className="card">
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>{t('table.srNo')}</th>
                 {isSuperAdmin && <th>{t('ui.admin') || 'Admin'}</th>}
                 <th>{t('adminPurchases.item') || 'Item'}</th>
                 <th className="text-right">{t('table.amount')}</th>
@@ -275,25 +200,26 @@ const AdminPurchases = () => {
               </tr>
             </thead>
             <tbody>
-              {purchases.map((p) => (
+              {purchases.map((p, index) => (
                 <tr key={p._id}>
+                  <td className="text-slate-500">{((page || 1) - 1) * 10 + index + 1}</td>
                   {isSuperAdmin && <td className="font-medium">{adminName(p)}</td>}
                   <td className="font-medium">{p.itemName}</td>
                   <td className="text-right">{formatCurrency(p.amount)}</td>
-                  <td>{formatDate(p.purchaseDate)}</td>
+                  <td className="whitespace-nowrap">{formatDate(p.purchaseDate)}</td>
                   <td><Badge status={p.status} /></td>
                   <td>
                     {p.billPhoto ? (
                       <a href={billUrl(p.billPhoto)} target="_blank" rel="noreferrer" className="link-accent inline-flex items-center gap-1">
                         <HiPhotograph className="w-4 h-4" /> View
                       </a>
-                    ) : '-'}
+                    ) : 'N/A'}
                   </td>
-                  <td className="max-w-[180px] truncate">{p.description || '-'}</td>
+                  <td className="max-w-[180px] truncate">{p.description || 'N/A'}</td>
                   {isSuperAdmin && (
                     <td className="text-right">
                       {p.status === 'pending' ? (
-                        <div className="inline-flex gap-1">
+                        <div className="table-actions flex !flex-row !flex-nowrap items-center gap-1 justify-end whitespace-nowrap">
                           <button
                             type="button"
                             className="btn-success action-chip"
@@ -311,7 +237,9 @@ const AdminPurchases = () => {
                             {t('loan.reject') || 'Reject'}
                           </button>
                         </div>
-                      ) : '-'}
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </td>
                   )}
                 </tr>

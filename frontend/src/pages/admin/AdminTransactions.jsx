@@ -77,46 +77,12 @@ const AdminTransactions = () => {
         </select>
       </div>
 
-      <div className="mobile-list">
-        {transactions.map((txn) => (
-          <div key={txn._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title font-mono text-xs">{txn.transactionId}</p>
-                <p className="mobile-list-meta mt-0.5">{txn.user?.name}</p>
-              </div>
-              <Badge status={txn.status} />
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.type')}</label>
-                <span>{getTransactionTypeLabel(txn.type)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span className="font-medium">{formatCurrency(txn.amount)}</span>
-              </div>
-              <div className="mobile-list-field col-span-2">
-                <label>{t('table.description')}</label>
-                <span className="text-slate-500">{txn.description}</span>
-              </div>
-              <div className="mobile-list-field col-span-2">
-                <label>{t('table.date')}</label>
-                <span>{formatDate(txn.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-        {!transactions.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
+      <div className="card">
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>{t('table.srNo')}</th>
                 <th>{t('table.id')}</th>
                 <th>{t('table.user')}</th>
                 <th>{t('table.type')}</th>
@@ -127,14 +93,15 @@ const AdminTransactions = () => {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((txn) => (
+              {transactions.map((txn, index) => (
                 <tr key={txn._id}>
+                  <td className="text-slate-500">{((page || 1) - 1) * 10 + index + 1}</td>
                   <td className="font-mono text-xs">{txn.transactionId}</td>
-                  <td>{txn.user?.name}</td>
+                  <td>{txn.user?.name || 'N/A'}</td>
                   <td>{getTransactionTypeLabel(txn.type)}</td>
                   <td className="text-right font-medium">{formatCurrency(txn.amount)}</td>
-                  <td className="text-slate-500">{txn.description}</td>
-                  <td>{formatDate(txn.createdAt)}</td>
+                  <td className="text-slate-500">{txn.description || 'N/A'}</td>
+                  <td className="whitespace-nowrap">{formatDate(txn.createdAt)}</td>
                   <td><Badge status={txn.status} /></td>
                 </tr>
               ))}

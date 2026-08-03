@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import adminPanelAPI from '../../services/adminPanelAPI';
 import { useAdminCounts } from '../../context/AdminCountsContext';
-import { formatCurrency, formatDate, getErrorMessage, downloadBlob } from '../../utils/helpers';
+import { formatCurrency, formatDate, getErrorMessage, downloadBlob, getFullName } from '../../utils/helpers';
 import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
@@ -41,6 +41,9 @@ const AdminLoans = () => {
   const [bounceCharge, setBounceCharge] = useState('');
   
   const [selectedTenure, setSelectedTenure] = useState('');
+  const [manualTenure, setManualTenure] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [defaultSettings, setDefaultSettings] = useState(null);
 
   const statusOptions = ['', 'pending', 'approved', 'active', 'closed', 'rejected'];
@@ -76,14 +79,18 @@ const AdminLoans = () => {
   useEffect(() => { fetchLoans(); }, [page, search, status]);
 
   const openApprovalModal = (loan) => {
+    if (submittingRef.current) return;
     setActionLoan(loan);
     setActionType('approved');
     setSelectedTenure('');
+    setManualTenure('');
+    submittingRef.current = false;
+    setSubmitting(false);
     
     if (defaultSettings) {
       setInterestRate(loan.interestRate || defaultSettings.defaultInterestRate || '');
       setInterestType(loan.interestType || defaultSettings.interestType || 'reducing_balance');
-      setInterestRatePeriod(loan.interestRatePeriod || defaultSettings.interestRatePeriod || 'monthly');
+      setInterestRatePeriod(loan.interestRatePeriod || defaultSettings.interestRatePeriod || 'yearly');
       setProcessingFeeType(defaultSettings.processingFeeType || 'flat');
       setProcessingFeeValue(defaultSettings.processingFeeValue || '');
       setProcessingFeePercent(defaultSettings.processingFeePercent || '');
@@ -101,6 +108,8 @@ const AdminLoans = () => {
       }
     } else {
       setInterestRate(loan.interestRate || '');
+      setInterestType(loan.interestType || 'reducing_balance');
+      setInterestRatePeriod(loan.interestRatePeriod || 'yearly');
     }
   };
 
@@ -151,6 +160,10 @@ const AdminLoans = () => {
   };
 
   const handleAction = async () => {
+    // Sync lock — blocks double-click before React re-renders disabled state
+    if (submittingRef.current || submitting) return;
+    submittingRef.current = true;
+    setSubmitting(true);
     try {
       const data = { status: actionType };
       
@@ -159,12 +172,15 @@ const AdminLoans = () => {
       }
       
       if (actionType === 'approved') {
-        if (!selectedTenure) {
+        const tenureValue = selectedTenure || (manualTenure ? parseInt(manualTenure, 10) : null);
+        if (!tenureValue || Number.isNaN(tenureValue) || tenureValue < 1) {
           toast.error(t('adminLoans.selectTenureToast'));
+          submittingRef.current = false;
+          setSubmitting(false);
           return;
         }
         
-        data.tenure = parseInt(selectedTenure);
+        data.tenure = tenureValue;
         
         if (interestRate) data.interestRate = parseFloat(interestRate);
         data.interestType = interestType;
@@ -204,6 +220,8 @@ const AdminLoans = () => {
       refreshAdminCounts();
     } catch (error) {
       toast.error(getErrorMessage(error));
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   };
 
@@ -212,9 +230,12 @@ const AdminLoans = () => {
     setActionType('');
     setRejectReason('');
     setSelectedTenure('');
+    setManualTenure('');
+    submittingRef.current = false;
+    setSubmitting(false);
     setInterestRate('');
     setInterestType('reducing_balance');
-    setInterestRatePeriod('monthly');
+    setInterestRatePeriod('yearly');
     setProcessingFeeType('flat');
     setProcessingFeeValue('');
     setProcessingFeePercent('');
@@ -271,26 +292,53 @@ const AdminLoans = () => {
 
   if (loading && !loans.length) return <PageLoader />;
 
-  const loanActions = (loan) => (
-    <>
-      {loan.status === 'pending' && (
+  const loanActions = (loan) => {
+    if (loan.status === 'pending') {
+      return (
         <>
           <button type="button" onClick={() => { setActionLoan(loan); setActionType('under_review'); }} className="btn-secondary action-chip">{t('ui.review')}</button>
           <button type="button" onClick={() => openApprovalModal(loan)} className="btn-success action-chip">{t('loan.approve')}</button>
           <button type="button" onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger action-chip">{t('loan.reject')}</button>
         </>
-      )}
-      {loan.status === 'under_review' && (
+      );
+    }
+    if (loan.status === 'under_review') {
+      return (
         <>
           <button type="button" onClick={() => openApprovalModal(loan)} className="btn-success action-chip">{t('loan.approve')}</button>
           <button type="button" onClick={() => { setActionLoan(loan); setActionType('rejected'); }} className="btn-danger action-chip">{t('loan.reject')}</button>
         </>
-      )}
-      {canCloseLoan(loan) && (
+      );
+    }
+    if (canCloseLoan(loan)) {
+      return (
         <button type="button" onClick={() => { setActionLoan(loan); setActionType('closed'); }} className="btn-secondary action-chip">{t('ui.close')}</button>
-      )}
-    </>
-  );
+      );
+    }
+
+    // Keep right-side column filled so every row aligns like pending loans with buttons
+    const statusText =
+      loan.status === 'approved' || loan.status === 'active'
+        ? t('adminLoans.loanApprovedLabel')
+        : loan.status === 'rejected'
+          ? t('adminLoans.loanRejectedLabel')
+          : loan.status === 'closed'
+            ? t('adminLoans.loanClosedLabel')
+            : t(`statusLabel.${loan.status}`, { defaultValue: loan.status });
+
+    const tone =
+      loan.status === 'approved' || loan.status === 'active'
+        ? 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800'
+        : loan.status === 'rejected' || loan.status === 'cancelled' || loan.status === 'defaulted'
+          ? 'text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-950/40 dark:border-red-800'
+          : 'text-slate-600 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-slate-800/60 dark:border-slate-700';
+
+    return (
+      <span className={`action-chip border ${tone}`}>
+        {statusText}
+      </span>
+    );
+  };
 
   return (
     <div className="page-stack">
@@ -317,55 +365,13 @@ const AdminLoans = () => {
         </select>
       </div>
 
-      <div className="mobile-list">
-        {loans.map((loan) => (
-          <div key={loan._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title">{loan.loanId}</p>
-                <p className="mobile-list-meta mt-0.5">{loan.user?.name}</p>
-              </div>
-              <Badge status={loan.status} />
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.type')}</label>
-                <span className="capitalize">{loan.loanType}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span>{formatCurrency(loan.amount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('ui.rate')}</label>
-                <span>{loan.interestRate}%</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('loan.emiAmount')}</label>
-                <span>{formatCurrency(loan.emiAmount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('adminLoans.procFee')}</label>
-                <span>{formatCurrency(loan.processingFee || 0)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('table.date')}</label>
-                <span>{formatDate(loan.createdAt)}</span>
-              </div>
-            </div>
-            <div className="mobile-list-actions">{loanActions(loan)}</div>
-          </div>
-        ))}
-        {!loans.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
+      {/* Clean table list (mobile + desktop) */}
+      <div className="card">
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>{t('table.srNo')}</th>
                 <th>{t('table.loanId')}</th>
                 <th>{t('table.user')}</th>
                 <th>{t('table.type')}</th>
@@ -379,37 +385,38 @@ const AdminLoans = () => {
               </tr>
             </thead>
             <tbody>
-              {loans.map((loan) => (
+              {loans.map((loan, index) => (
                 <tr key={loan._id}>
+                  <td className="text-slate-500">{((page || 1) - 1) * 10 + index + 1}</td>
                   <td className="font-medium">{loan.loanId}</td>
-                  <td>{loan.user?.name}</td>
+                  <td>{getFullName(loan.user)}</td>
                   <td className="capitalize">{loan.loanType}</td>
                   <td className="text-right">{formatCurrency(loan.amount)}</td>
                   <td className="text-right">{loan.interestRate}%</td>
                   <td className="text-right">{formatCurrency(loan.processingFee || 0)}</td>
                   <td className="text-right">{formatCurrency(loan.emiAmount)}</td>
                   <td><Badge status={loan.status} /></td>
-                  <td>{formatDate(loan.createdAt)}</td>
-                  <td className="text-right">
-                    <div className="inline-flex flex-wrap gap-1 justify-end">{loanActions(loan)}</div>
+                  <td className="whitespace-nowrap">{formatDate(loan.createdAt)}</td>
+                  <td className="text-right !whitespace-nowrap">
+                    <div className="table-actions flex !flex-row !flex-nowrap items-center gap-1 justify-end whitespace-nowrap">
+                      {loanActions(loan)}
+                    </div>
                   </td>
                 </tr>
               ))}
-              {!loans.length && (
-                <tr>
-                  <td colSpan={10} className="!whitespace-normal py-10 text-center text-slate-500">{t('noData')}</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+        {!loans.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">{t('noData')}</p>
+        )}
       </div>
 
       <Pagination meta={meta} onPageChange={setPage} />
 
       <Modal 
         isOpen={!!actionLoan && actionType === 'approved'} 
-        onClose={resetFields} 
+        onClose={() => { if (!submittingRef.current) resetFields(); }} 
         title={t('adminLoans.approveTitle')}
         size="lg"
       >
@@ -431,7 +438,7 @@ const AdminLoans = () => {
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-gray-400">{t('table.user')}:</span>
-                <span className="ml-2 font-medium">{actionLoan?.user?.name}</span>
+                <span className="ml-2 font-medium">{getFullName(actionLoan?.user)}</span>
               </div>
             </div>
           </div>
@@ -443,7 +450,10 @@ const AdminLoans = () => {
                 <button
                   key={tenure}
                   type="button"
-                  onClick={() => setSelectedTenure(tenure)}
+                  onClick={() => {
+                    setSelectedTenure(tenure);
+                    setManualTenure('');
+                  }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedTenure === tenure 
                       ? 'bg-primary-600 text-white' 
@@ -454,7 +464,22 @@ const AdminLoans = () => {
                 </button>
               ))}
             </div>
-            {!selectedTenure && (
+            <div className="mt-3">
+              <label className="label">{t('adminLoans.manualTenure')}</label>
+              <input
+                type="number"
+                className="input"
+                min={1}
+                max={360}
+                placeholder={t('adminLoans.manualTenurePlaceholder')}
+                value={manualTenure}
+                onChange={(e) => {
+                  setManualTenure(e.target.value);
+                  setSelectedTenure('');
+                }}
+              />
+            </div>
+            {!selectedTenure && !manualTenure && (
               <p className="text-red-500 text-sm mt-2">{t('adminLoans.selectTenureRequired')}</p>
             )}
           </div>
@@ -473,6 +498,17 @@ const AdminLoans = () => {
                   step="0.01"
                 />
               </div>
+              <div>
+                <label className="label">{t('adminLoans.interestType')}</label>
+                <select
+                  className="input"
+                  value={interestType}
+                  onChange={(e) => setInterestType(e.target.value)}
+                >
+                  <option value="reducing_balance">{t('adminLoans.reducingBalance')}</option>
+                  <option value="flat">{t('adminLoans.flatInterest')}</option>
+                </select>
+              </div>
                <div>
                   <label className="label">{t('adminLoans.processingFeeAmount')}</label>
                   <input
@@ -483,17 +519,6 @@ const AdminLoans = () => {
                     placeholder={t('adminLoans.enterFeeAmount')}
                   />
                 </div>
-              {/* <div>
-                <label className="label">{t('adminLoans.ratePeriod')}</label>
-                <select 
-                  className="input" 
-                  value={interestRatePeriod} 
-                  onChange={(e) => setInterestRatePeriod(e.target.value)}
-                >
-                  <option value="yearly">{t('adminLoans.yearly')}</option>
-                  <option value="monthly">{t('adminLoans.monthly')}</option>
-                </select>
-              </div> */}
             </div>
           </div>
 
@@ -599,7 +624,11 @@ const AdminLoans = () => {
               </div>
               <div className="flex justify-between">
                 <span>{t('loan.tenure')}:</span>
-                <span className="font-medium">{selectedTenure ? t('adminLoans.months', { count: selectedTenure }) : t('adminLoans.notSelected')}</span>
+                <span className="font-medium">
+                  {(selectedTenure || manualTenure)
+                    ? t('adminLoans.months', { count: selectedTenure || parseInt(manualTenure, 10) })
+                    : t('adminLoans.notSelected')}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>{t('loan.processingFee')}:</span>
@@ -633,30 +662,44 @@ const AdminLoans = () => {
             </div>
           </div>
 
-          <button onClick={handleAction} className="btn-primary w-full">
-            {t('adminLoans.confirmApproval')}
+          <button
+            type="button"
+            onClick={handleAction}
+            disabled={submitting}
+            aria-busy={submitting}
+            className="btn-primary w-full disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none"
+          >
+            {submitting ? t('loading') : t('adminLoans.confirmApproval')}
           </button>
         </div>
       </Modal>
 
       <Modal 
         isOpen={!!actionLoan && (actionType === 'under_review' || actionType === 'disbursed' || actionType === 'closed')} 
-        onClose={resetFields} 
+        onClose={() => { if (!submittingRef.current) resetFields(); }} 
         title={t('adminLoans.actionLoanTitle', { action: getActionLabel(actionType) })}
       >
         <div className="space-y-4">
           <p>{t('adminLoans.actionConfirm', { action: getActionLabel(actionType).toLowerCase() })}</p>
           <p>{t('adminLoans.loanLabel')}: <strong>{actionLoan?.loanId}</strong> - {formatCurrency(actionLoan?.amount)}</p>
           <div className="flex gap-2">
-            <button onClick={resetFields} className="btn-secondary flex-1">{t('cancel')}</button>
-            <button onClick={handleAction} className="btn-primary flex-1">{t('ui.confirm')}</button>
+            <button type="button" onClick={resetFields} className="btn-secondary flex-1" disabled={submitting}>{t('cancel')}</button>
+            <button
+              type="button"
+              onClick={handleAction}
+              className="btn-primary flex-1 disabled:opacity-60 disabled:pointer-events-none"
+              disabled={submitting}
+              aria-busy={submitting}
+            >
+              {submitting ? t('loading') : t('ui.confirm')}
+            </button>
           </div>
         </div>
       </Modal>
 
       <Modal 
         isOpen={!!actionLoan && actionType === 'rejected'} 
-        onClose={resetFields} 
+        onClose={() => { if (!submittingRef.current) resetFields(); }} 
         title={t('adminLoans.rejectTitle')}
       >
         <div className="space-y-4">
@@ -669,9 +712,18 @@ const AdminLoans = () => {
               value={rejectReason} 
               onChange={(e) => setRejectReason(e.target.value)} 
               placeholder={t('adminLoans.rejectionPlaceholder')}
+              disabled={submitting}
             />
           </div>
-          <button onClick={handleAction} className="btn-primary w-full">{t('adminLoans.confirmRejection')}</button>
+          <button
+            type="button"
+            onClick={handleAction}
+            className="btn-primary w-full disabled:opacity-60 disabled:pointer-events-none"
+            disabled={submitting}
+            aria-busy={submitting}
+          >
+            {submitting ? t('loading') : t('adminLoans.confirmRejection')}
+          </button>
         </div>
       </Modal>
     </div>

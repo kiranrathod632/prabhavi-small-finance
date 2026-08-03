@@ -45,39 +45,12 @@ const KYCReview = () => {
     <div className="page-stack">
       <PageHeader title="KYC Review" />
 
-      <div className="mobile-list">
-        {profiles.map((p) => (
-          <div key={p._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title">{p.user?.name}</p>
-                <p className="mobile-list-meta mt-0.5">{p.user?.mobile || p.phone}</p>
-              </div>
-              <Badge status={p.kycStatus} />
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>PAN</label>
-                <span className="font-mono">{p.pan}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>Submitted</label>
-                <span>{formatDate(p.kycSubmittedAt)}</span>
-              </div>
-            </div>
-            <div className="mobile-list-actions">{kycActions(p)}</div>
-          </div>
-        ))}
-        {!profiles.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">No pending KYC applications</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
+      <div className="card">
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>Sr. No.</th>
                 <th>User</th>
                 <th>Mobile</th>
                 <th>PAN</th>
@@ -87,21 +60,27 @@ const KYCReview = () => {
               </tr>
             </thead>
             <tbody>
-              {profiles.map((p) => (
+              {profiles.map((p, index) => (
                 <tr key={p._id}>
-                  <td>{p.user?.name}</td>
-                  <td>{p.user?.mobile || p.phone}</td>
-                  <td className="font-mono">{p.pan}</td>
+                  <td className="text-slate-500">{((page || 1) - 1) * 10 + index + 1}</td>
+                  <td>{p.user?.name || 'N/A'}</td>
+                  <td>{p.user?.mobile || p.phone || 'N/A'}</td>
+                  <td className="font-mono">{p.pan || 'N/A'}</td>
                   <td><Badge status={p.kycStatus} /></td>
-                  <td>{formatDate(p.kycSubmittedAt)}</td>
-                  <td className="text-right">
-                    <div className="inline-flex flex-wrap gap-1 justify-end">{kycActions(p)}</div>
+                  <td className="whitespace-nowrap">{formatDate(p.kycSubmittedAt)}</td>
+                  <td className="text-right !whitespace-nowrap">
+                    <div className="table-actions flex !flex-row !flex-nowrap items-center gap-1 justify-end whitespace-nowrap">
+                      {kycActions(p)}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {!profiles.length && (
+          <p className="p-4 text-center text-slate-500 text-sm">No pending KYC applications</p>
+        )}
       </div>
 
       <Pagination meta={meta} onPageChange={setPage} />

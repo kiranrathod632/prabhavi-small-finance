@@ -10,12 +10,18 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
     xl: 'max-w-4xl',
   };
 
+  const isCompact = size === 'sm';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div
+      className={`fixed inset-0 z-50 flex justify-center ${
+        isCompact ? 'items-center p-3 sm:p-4' : 'items-end sm:items-center p-0 sm:p-4'
+      }`}
+    >
       <div className="fixed inset-0 bg-black/50 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className={`modal-panel ${sizes[size]}`}>
+      <div className={`modal-panel ${isCompact ? 'modal-panel-compact' : sizes[size]}`}>
         <div className="modal-header">
-          <h3 className="text-sm sm:text-lg font-semibold pr-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+          <h3 className="text-sm sm:text-base font-semibold pr-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
           <button
             type="button"
             onClick={onClose}

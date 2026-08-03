@@ -477,7 +477,7 @@
   }
 
   .data-table {
-    @apply w-full text-[11px] sm:text-sm text-left min-w-[640px];
+    @apply w-full text-[11px] sm:text-sm text-left min-w-[720px];
   }
 
   .data-table th {
@@ -535,9 +535,9 @@
     @apply space-y-3.5 sm:space-y-6;
   }
 
-  /* Mobile: one shared horizontal scroll list (compact rows); desktop uses .desktop-table */
+  /* Mobile: compact rows; desktop uses .desktop-table */
   .mobile-list {
-    @apply flex flex-col gap-1.5 md:hidden overflow-x-auto pb-1;
+    @apply flex flex-col gap-1.5 md:hidden w-full max-w-full min-w-0 overflow-x-auto pb-1;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
   }
@@ -559,6 +559,61 @@
     box-shadow: var(--shadow-card-sm);
     width: max-content;
     min-width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  /* Stacked card rows (no horizontal clip) — use when fields must stay fully visible */
+  .mobile-list-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-card);
+    padding: 0.75rem 0.85rem;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-card-sm);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .mobile-list-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .mobile-list-card-top .mobile-list-title,
+  .mobile-list-card-top .mobile-list-meta {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .mobile-list-card-top .mobile-list-actions {
+    margin-left: 0;
+    padding-left: 0;
+    border: 0;
+    padding-top: 0;
+  }
+
+  .mobile-list-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem 0.75rem;
+  }
+
+  .mobile-list-card-grid .mobile-list-field {
+    min-width: 0;
+  }
+
+  .mobile-list-card-grid .mobile-list-field span,
+  .mobile-list-card-grid .mobile-list-field a,
+  .mobile-list-card-grid .mobile-list-field button {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .mobile-list-head {
@@ -713,7 +768,45 @@
   }
 
   .action-chip {
-    @apply inline-flex items-center justify-center text-[10px] sm:text-xs py-1.5 px-2.5 rounded-lg font-medium min-h-0 whitespace-nowrap;
+    @apply inline-flex items-center justify-center text-[10px] sm:text-xs py-1.5 px-2.5 rounded-lg font-medium min-h-0 whitespace-nowrap shrink-0;
+  }
+
+  /* Keep Collect / Approve / Review etc. on one horizontal line */
+  .table-actions {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    white-space: nowrap;
+    max-width: none;
+  }
+
+  .table-actions > button,
+  .table-actions > a,
+  .table-actions > span {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    display: inline-flex !important;
+  }
+
+  .data-table td:has(.table-actions) {
+    width: 1%;
+    white-space: nowrap !important;
+    min-width: max-content;
+  }
+
+  .table-actions .action-chip,
+  .table-actions .btn-primary,
+  .table-actions .btn-secondary,
+  .table-actions .btn-success,
+  .table-actions .btn-danger {
+    font-size: 10px;
+    padding: 0.3rem 0.55rem;
+    min-height: 0;
+    line-height: 1.2;
   }
 
   .icon-btn {
@@ -727,15 +820,15 @@
   }
 
   .icon-btn-view {
-    @apply p-1.5 rounded-lg transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10;
+    @apply p-1.5 rounded-lg transition-colors text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50;
   }
 
   .icon-btn-edit {
-    @apply p-1.5 rounded-lg transition-colors text-teal-600 dark:text-accent-400 hover:bg-teal-50 dark:hover:bg-accent-400/10;
+    @apply p-1.5 rounded-lg transition-colors text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50;
   }
 
   .icon-btn-danger {
-    @apply p-1.5 rounded-lg transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10;
+    @apply p-1.5 rounded-lg transition-colors text-red-500 bg-red-50 hover:bg-red-100 dark:text-red-300 dark:bg-red-950/40 dark:hover:bg-red-900/50;
   }
 
   .link-accent {
@@ -809,9 +902,20 @@
     max-height: 88vh;
   }
 
+  .modal-panel-compact {
+    border-radius: 1rem;
+    max-width: 21.5rem;
+    max-height: min(88vh, 36rem);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  }
+
   @media (min-width: 640px) {
     .modal-panel {
       max-height: 90vh;
+    }
+
+    .modal-panel-compact {
+      max-width: 24rem;
     }
   }
 

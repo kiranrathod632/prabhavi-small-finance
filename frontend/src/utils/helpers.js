@@ -111,6 +111,18 @@ export const loanTypes = [
 ];
 
 /**
+ * Format user full name: "first middle last" (falls back to name)
+ */
+export const getFullName = (user) => {
+  if (!user) return '-';
+  const composed = [user.firstName, user.middleName, user.lastName]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return composed || user.name || '-';
+};
+
+/**
  * Extract error message from API error
  */
 export const getErrorMessage = (error) => {

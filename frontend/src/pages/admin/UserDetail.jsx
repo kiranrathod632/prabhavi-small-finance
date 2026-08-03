@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import adminPanelAPI from '../../services/adminPanelAPI';
-import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
+import { formatCurrency, formatDate, getErrorMessage, getFullName } from '../../utils/helpers';
 import { PAYMENT_METHODS } from '../../utils/roles';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
@@ -85,7 +85,7 @@ const UserDetail = () => {
           <HiArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold">{user.name}</h1>
+          <h1 className="text-2xl font-bold">{getFullName(user)}</h1>
           <p className="text-sm text-gray-500">{t('userDetail.subtitle')}</p>
         </div>
       </div>

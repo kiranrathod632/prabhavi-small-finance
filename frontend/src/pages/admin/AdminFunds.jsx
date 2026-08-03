@@ -89,32 +89,12 @@ const AdminFunds = () => {
         <>
           <h3 className="font-semibold text-sm">{t('adminDash.fundHistory')}</h3>
 
-          <div className="mobile-list">
-            {history.map((h, i) => (
-              <div key={i} className="mobile-list-item">
-                <div className="mobile-list-head">
-                  <p className="mobile-list-title capitalize">{h.type}</p>
-                  <span className="font-medium">{formatCurrency(h.amount)}</span>
-                </div>
-                <div className="mobile-list-grid">
-                  <div className="mobile-list-field col-span-2">
-                    <label>{t('table.description')}</label>
-                    <span>{h.description || '-'}</span>
-                  </div>
-                  <div className="mobile-list-field col-span-2">
-                    <label>{t('table.date')}</label>
-                    <span>{formatDate(h.date || h.createdAt)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="card desktop-table">
+          <div className="card">
             <div className="data-table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>{t('table.srNo')}</th>
                     <th>{t('table.type')}</th>
                     <th className="text-right">{t('table.amount')}</th>
                     <th>{t('table.description')}</th>
@@ -124,10 +104,11 @@ const AdminFunds = () => {
                 <tbody>
                   {history.map((h, i) => (
                     <tr key={i}>
+                      <td className="text-slate-500">{i + 1}</td>
                       <td className="capitalize">{h.type}</td>
                       <td className="text-right">{formatCurrency(h.amount)}</td>
-                      <td>{h.description || '-'}</td>
-                      <td>{formatDate(h.date || h.createdAt)}</td>
+                      <td>{h.description || 'N/A'}</td>
+                      <td className="whitespace-nowrap">{formatDate(h.date || h.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

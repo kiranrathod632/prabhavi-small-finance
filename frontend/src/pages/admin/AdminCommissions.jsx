@@ -102,46 +102,12 @@ const AdminCommissions = () => {
         </div>
       </div>
 
-      <div className="mobile-list">
-        {rows.map((c) => (
-          <div key={c._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title">{c.user?.name}</p>
-                <p className="mobile-list-meta mt-0.5">{c.loan?.loanId}</p>
-              </div>
-              <Badge status={c.status} />
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span>{formatCurrency(c.loanAmount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>%</label>
-                <span>{c.commissionPercentage}%</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('ui.commission') || 'Commission'}</label>
-                <span className="font-medium text-green-600">{formatCurrency(c.commissionAmount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('table.date')}</label>
-                <span>{formatDate(c.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-        {!rows.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
+      <div className="card">
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>{t('table.srNo')}</th>
                 <th>{t('table.user')}</th>
                 <th>{t('table.loanId')}</th>
                 <th className="text-right">{t('table.amount')}</th>
@@ -152,15 +118,16 @@ const AdminCommissions = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
+              {rows.map((c, index) => (
                 <tr key={c._id}>
-                  <td>{c.user?.name}</td>
-                  <td>{c.loan?.loanId}</td>
+                  <td className="text-slate-500">{((page || 1) - 1) * 10 + index + 1}</td>
+                  <td>{c.user?.name || 'N/A'}</td>
+                  <td>{c.loan?.loanId || 'N/A'}</td>
                   <td className="text-right">{formatCurrency(c.loanAmount)}</td>
                   <td className="text-right">{c.commissionPercentage}%</td>
                   <td className="text-right font-medium text-green-600">{formatCurrency(c.commissionAmount)}</td>
                   <td><Badge status={c.status} /></td>
-                  <td>{formatDate(c.createdAt)}</td>
+                  <td className="whitespace-nowrap">{formatDate(c.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

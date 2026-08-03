@@ -330,40 +330,11 @@ const AdminDashboard = () => {
         <div className="card-header">
           <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.recentTransactions')}</h3>
         </div>
-        <div className="mobile-list">
-          {(recentTransactions || []).map((txn) => (
-            <div key={txn._id} className="mobile-list-item">
-              <div className="mobile-list-head">
-                <div className="min-w-0">
-                  <p className="mobile-list-title font-mono">{txn.transactionId}</p>
-                  <p className="mobile-list-meta">{txn.user?.name}</p>
-                </div>
-                <Badge status={txn.status} />
-              </div>
-              <div className="mobile-list-grid">
-                <div className="mobile-list-field">
-                  <label>{t('table.type')}</label>
-                  <span>{getTransactionTypeLabel(txn.type)}</span>
-                </div>
-                <div className="mobile-list-field">
-                  <label>{t('table.amount')}</label>
-                  <span>{formatCurrency(txn.amount)}</span>
-                </div>
-                <div className="mobile-list-field col-span-2">
-                  <label>{t('table.date')}</label>
-                  <span>{formatDate(txn.createdAt)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-          {!recentTransactions?.length && (
-            <p className="py-6 text-center text-[12px] text-slate-500">{t('noData')}</p>
-          )}
-        </div>
-        <div className="data-table-wrap desktop-table">
+        <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th>{t('table.srNo')}</th>
                 <th>{t('table.id')}</th>
                 <th>{t('table.user')}</th>
                 <th>{t('table.type')}</th>
@@ -373,19 +344,20 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {recentTransactions?.map((txn) => (
+              {(recentTransactions || []).map((txn, index) => (
                 <tr key={txn._id}>
+                  <td className="text-slate-500">{index + 1}</td>
                   <td className="font-mono text-xs">{txn.transactionId}</td>
-                  <td>{txn.user?.name}</td>
+                  <td>{txn.user?.name || 'N/A'}</td>
                   <td>{getTransactionTypeLabel(txn.type)}</td>
                   <td className="text-right font-semibold">{formatCurrency(txn.amount)}</td>
-                  <td>{formatDate(txn.createdAt)}</td>
+                  <td className="whitespace-nowrap">{formatDate(txn.createdAt)}</td>
                   <td><Badge status={txn.status} /></td>
                 </tr>
               ))}
               {!recentTransactions?.length && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-primary-400">{t('noData')}</td>
+                  <td colSpan={7} className="py-8 text-center text-primary-400">{t('noData')}</td>
                 </tr>
               )}
             </tbody>
