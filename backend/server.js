@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import http from "http";
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
@@ -13,10 +14,7 @@ import { applyOverduePenalties } from './services/penaltyService.js';
 import { startSmsCronJobs } from './jobs/smsCron.js';
 
 
-// import dotenv from "dotenv";
 dotenv.config();
-
-console.log("Mongo URI:", process.env.MONGODB_URI);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
