@@ -1,0 +1,12 @@
+# Optional Render Blueprint for the frontend Web Service.
+# If you already have a service, you only need to change Start Command to: npm start
+services:
+  - type: web
+    name: prabhavi-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
