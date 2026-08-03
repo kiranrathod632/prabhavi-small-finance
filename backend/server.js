@@ -23,6 +23,9 @@ dotenv.config({ path: path.join(__dirname, '.env'), override: true });
 
 const app = express();
 
+// Required on Render/proxies so rate-limit uses the real client IP (not one shared proxy IP)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
@@ -59,15 +62,6 @@ app.use(
   })
 );
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, message: 'Too many requests, please try again later.' },
-});
-app.use('/api', limiter);
-// Same limiter when clients call routes without the /api prefix
-app.use(['/auth', '/otp', '/users', '/profile', '/loans', '/emis', '/transactions', '/funds', '/notifications', '/dashboard', '/settings', '/recovery', '/reports', '/admins', '/admin'], limiter);
-
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -80,12 +74,28 @@ if (process.env.NODE_ENV === 'development') {
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check (both paths)
+// Health check before rate limiter (Render probes must not burn the quota)
 const healthHandler = (req, res) => {
   res.json({ success: true, message: 'Finance Loan API is running', timestamp: new Date().toISOString() });
 };
 app.get('/api/health', healthHandler);
 app.get('/health', healthHandler);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  // Live apps + shared NATs need headroom; override with RATE_LIMIT_MAX if needed
+  max: Number(process.env.RATE_LIMIT_MAX) || 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  skip: (req) => {
+    const url = req.originalUrl || '';
+    return url.startsWith('/api/health') || url.startsWith('/health');
+  },
+});
+app.use('/api', limiter);
+// Same limiter when clients call routes without the /api prefix
+app.use(['/auth', '/otp', '/users', '/profile', '/loans', '/emis', '/transactions', '/funds', '/notifications', '/dashboard', '/settings', '/recovery', '/reports', '/admins', '/admin'], limiter);
 
 // API routes — /api/* is canonical; bare /* kept for clients that omit the prefix
 app.use('/api', routes);
