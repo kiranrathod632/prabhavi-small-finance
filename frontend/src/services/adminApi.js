@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { resolveApiBaseUrl } from './api.js';
+
+const apiBaseUrl = resolveApiBaseUrl();
 
 const adminApi = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || '/api'}/admin`,
+  baseURL: `${apiBaseUrl}/admin`,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -23,7 +26,7 @@ adminApi.interceptors.response.use(
       if (refreshToken) {
         try {
           const { data } = await axios.post(
-            `${import.meta.env.VITE_API_URL || '/api'}/auth/refresh-token`,
+            `${apiBaseUrl}/auth/refresh-token`,
             { refreshToken }
           );
           localStorage.setItem('accessToken', data.data.accessToken);

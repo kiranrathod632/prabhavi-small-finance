@@ -1,7 +1,17 @@
 import axios from 'axios';
 
+/** Ensure base URL ends with /api (fixes VITE_API_URL set to host without /api). */
+export const resolveApiBaseUrl = () => {
+  const raw = String(import.meta.env.VITE_API_URL || '/api').trim().replace(/\/+$/, '');
+  if (!raw || raw === '/api') return '/api';
+  if (raw.endsWith('/api')) return raw;
+  return `${raw}/api`;
+};
+
+const apiBaseUrl = resolveApiBaseUrl();
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: apiBaseUrl,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -27,7 +37,7 @@ api.interceptors.response.use(
       if (refreshToken) {
         try {
           const { data } = await axios.post(
-            `${import.meta.env.VITE_API_URL || '/api'}/auth/refresh-token`,
+            `${apiBaseUrl}/auth/refresh-token`,
             { refreshToken }
           );
           localStorage.setItem('accessToken', data.data.accessToken);
