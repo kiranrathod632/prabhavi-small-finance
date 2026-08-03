@@ -25,28 +25,39 @@ const app = express();
 
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow tools/Postman (no Origin) and configured frontends
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    // Vite often uses 5174+ when 5173 is busy
-    if (
-      process.env.NODE_ENV === 'development' &&
-      /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)
-    ) {
-      return callback(null, true);
-    }
-    callback(new Error(`Not allowed by CORS: ${origin}`));
-  },
-  credentials: true,
-}));
+// ✅ Fixed: Combined allowed origins from env and hardcoded fallback
+const allowedOrigins = (() => {
+  const envOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  
+  // Add hardcoded fallback origins if not already present
+  const fallbackOrigins = [
+    "http://localhost:5173",
+    "https://prabhavi-small-finance-3.onrender.com",
+  ];
+  
+  // Combine and deduplicate
+  const combined = [...envOrigins, ...fallbackOrigins];
+  return [...new Set(combined)]; // Remove duplicates
+})();
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
