@@ -1,12 +1,34 @@
-# Optional Render Blueprint for the frontend Web Service.
-# If you already have a service, you only need to change Start Command to: npm start
 services:
+  # ==================== BACKEND SERVICE ====================
+  - type: web
+    name: prabhavi-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node index.js  # or npm start (change to your main file)
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "10000"
+      # Add your backend environment variables here
+      # - key: DATABASE_URL
+      #   value: "your_database_url"
+      # - key: JWT_SECRET
+      #   value: "your_secret"
+
+  # ==================== FRONTEND SERVICE ====================
   - type: web
     name: prabhavi-frontend
     runtime: node
     rootDir: frontend
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: npm start  # or npm run preview (change based on your setup)
     envVars:
       - key: NODE_VERSION
         value: "20"
+      # Add frontend environment variables here
+      # - key: VITE_API_URL
+      #   value: "https://prabhavi-backend.onrender.com"
+      # - key: REACT_APP_API_URL
+      #   value: "https://prabhavi-backend.onrender.com"
