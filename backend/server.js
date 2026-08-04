@@ -39,7 +39,7 @@ const allowedOrigins = (() => {
   // Add hardcoded fallback origins if not already present
   const fallbackOrigins = [
     "http://localhost:5173",
-    "https://prabhavi-small-finance-3.onrender.com",
+    "https://prabhavi-small-finance-a3tw.onrender.com",
   ];
   
   // Combine and deduplicate
