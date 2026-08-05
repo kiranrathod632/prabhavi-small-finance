@@ -28,50 +28,41 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// CORS: env CLIENT_URL + production frontend fallbacks (must be browser origins, not the API host)
-const normalizeOrigin = (value) =>
-  String(value || '')
-    .trim()
-    .replace(/^['"]|['"]$/g, '')
-    .replace(/\/$/, '');
-
+// CORS: combine env-driven origins with safe frontend fallbacks
 const allowedOrigins = (() => {
   const envOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
     .split(',')
-    .map(normalizeOrigin)
+    .map((o) => o.trim())
     .filter(Boolean);
-
+  
+  // Frontend fallbacks for local + production deployments
   const fallbackOrigins = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://prabhavi-small-finance.vercel.app',
+    "http://localhost:5173",
+    "https://prabhavi-small-finance.vercel.app",
   ];
-
-  return [...new Set([...envOrigins, ...fallbackOrigins])];
+  
+  // Combine and deduplicate
+  const combined = [...envOrigins, ...fallbackOrigins];
+  return [...new Set(combined)]; // Remove duplicates
 })();
 
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true; // same-origin / curl / mobile
-  const normalized = normalizeOrigin(origin);
-  if (allowedOrigins.includes(normalized)) return true;
-  // Vercel production + preview URLs
-  return /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(normalized);
-};
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const isKnownOrigin = !!origin && allowedOrigins.includes(origin);
+      const isVercelPreview = !!origin && /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
 
-const corsOptions = {
-  origin(origin, callback) {
-    // callback(null, false) denies without throwing — throwing skips ACAO headers
-    callback(null, isAllowedOrigin(origin));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
-// Ensure preflight is answered even if a route does not declare OPTIONS
-app.options('*', cors(corsOptions));
+      if (!origin || isKnownOrigin || isVercelPreview) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -100,7 +91,6 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
   skip: (req) => {
-    if (req.method === 'OPTIONS') return true;
     const url = req.originalUrl || '';
     return url.startsWith('/api/health') || url.startsWith('/health');
   },
