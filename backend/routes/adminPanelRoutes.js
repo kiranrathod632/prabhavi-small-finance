@@ -75,9 +75,9 @@ router.post('/emis/:id/collect', mongoIdValidator, validate, requirePermission(P
 router.post('/emis/:id/partial-pay', mongoIdValidator, validate, requirePermission(PERMISSIONS.EMIS_MANAGE), adminPartialPayEMI);
 router.put('/emis/:id/penalty', mongoIdValidator, requirePermission(PERMISSIONS.EMIS_MANAGE), adminAddPenalty);
 
-// Commission — Admin earns on loans under them; can set commission %
+// Commission — Super Admin sets %; Admins earn on approved loans under them
 router.get('/commissions', requirePermission(PERMISSIONS.COMMISSION_VIEW), listCommissions);
-router.put('/commission-rate', authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN), updateCommissionRate);
+router.put('/commission-rate', authorize(ROLES.SUPER_ADMIN), updateCommissionRate);
 
 // Super Admin only — manage admins
 router.get('/manage/admins', authorize(ROLES.SUPER_ADMIN), getAdmins);

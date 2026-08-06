@@ -46,6 +46,10 @@ const interestSettingsSchema = new mongoose.Schema(
       education: { type: Number, default: 12 },
       vehicle: { type: Number, default: 14 },
     },
+    /** Global rate Super Admin sets for Admin commission on approved loans */
+    adminCommissionRate: { type: Number, default: 2, min: 0, max: 100 },
+    /** After Super Admin sets rate once, locked until they unlock */
+    adminCommissionRateLocked: { type: Boolean, default: false },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

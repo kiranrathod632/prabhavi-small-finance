@@ -209,7 +209,8 @@
     "description": "Description",
     "wallet": "Wallet",
     "loanId": "Loan ID",
-    "action": "Action"
+    "action": "Action",
+    "admin": "Admin"
   },
   "adminDash": {
     "title": "Admin Dashboard",
@@ -555,7 +556,17 @@
   "commission": {
     "title": "Commission",
     "hint": "You earn commission on loans of users under your account.",
+    "superHint": "Set commission % for Admins. They earn it when loans of their users are approved.",
+    "applyAllHint": "Applies to all Admins. Saves and locks automatically.",
+    "adminRateHint": "Set by Super Admin. You earn this on approved loans of your users.",
     "rateUpdated": "Commission rate updated",
+    "rateUnlocked": "Commission rate unlocked",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "unlock": "Unlock",
+    "lockedHint": "Rate is locked after save. Unlock to change it again.",
+    "byAdmin": "Commission by Admin",
+    "details": "Commission Details",
     "totalEarned": "Total Commission"
   },
   "adminLoans": {
@@ -662,6 +673,8 @@
     "viewUsers": "(view)",
     "hideUsers": "(hide)",
     "noJoinedUsers": "No users joined under this admin yet",
+    "totalCommission": "Total Commission",
+    "totalPurchase": "Total Purchase",
     "totalLoans": "Total Loans",
     "activeLoans": "Active Loans",
     "pendingLoans": "Pending Loans",

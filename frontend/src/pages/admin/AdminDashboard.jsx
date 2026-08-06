@@ -204,6 +204,7 @@ const AdminDashboard = () => {
           <StatCard title={t('adminDash.totalInterest') || 'Total Interest'} value={formatCurrency(cards.totalInterestEarned || 0)} color="indigo" />
           <StatCard title={t('adminDash.processingFeeAmount') || 'Processing Fee'} value={formatCurrency(cards.totalProcessingFees || 0)} color="yellow" />
           <StatCard title={t('adminDash.companyFund')} value={formatCurrency(cards.companyFund)} color="indigo" />
+        <StatCard title={t('adminDash.expenses')} value={formatCurrency(cards.expenses || cards.purchaseApprovedTotal || 0)} color="red" />
         </div>
       </section>
 

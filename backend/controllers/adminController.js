@@ -3,6 +3,8 @@ import Profile from '../models/Profile.js';
 import Loan from '../models/Loan.js';
 import EMI from '../models/EMI.js';
 import Otp from '../models/Otp.js';
+import Commission from '../models/Commission.js';
+import Purchase from '../models/Purchase.js';
 import bcrypt from 'bcryptjs';
 import { asyncHandler, sendResponse, sendError } from '../utils/apiResponse.js';
 import { paginate, paginationMeta } from '../utils/helpers.js';
@@ -13,6 +15,7 @@ import { createNotification } from '../services/notificationService.js';
 import { createOtp, verifyOtp } from '../services/otpService.js';
 import { sendOtpSms } from '../services/smsService.js';
 import { sendOtpEmail } from '../services/emailService.js';
+import { getSettings } from '../services/settingsService.js';
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const isValidMobile = (value) => /^[6-9]\d{9}$/.test(value);
@@ -236,6 +239,48 @@ export const getAdmins = asyncHandler(async (req, res) => {
 
   const emiSummaryByUser = new Map(emiSummaries.map((s) => [s._id.toString(), s]));
 
+  const [commissionTotals, purchaseTotals] = adminIds.length
+    ? await Promise.all([
+      Commission.aggregate([
+        {
+          $match: {
+            admin: { $in: adminIds },
+            isDeleted: { $ne: true },
+          },
+        },
+        {
+          $group: {
+            _id: '$admin',
+            totalCommissionEarned: { $sum: '$commissionAmount' },
+            commissionCount: { $sum: 1 },
+          },
+        },
+      ]),
+      Purchase.aggregate([
+        {
+          $match: {
+            requestedBy: { $in: adminIds },
+            status: 'approved',
+          },
+        },
+        {
+          $group: {
+            _id: '$requestedBy',
+            totalPurchase: { $sum: '$amount' },
+            purchaseCount: { $sum: 1 },
+          },
+        },
+      ]),
+    ])
+    : [[], []];
+
+  const commissionByAdmin = new Map(
+    commissionTotals.map((c) => [c._id.toString(), c])
+  );
+  const purchaseByAdmin = new Map(
+    purchaseTotals.map((p) => [p._id.toString(), p])
+  );
+
   const usersByAdmin = new Map();
   joinedUsers.forEach((u) => {
     const key = u.adminId?.toString();
@@ -264,10 +309,16 @@ export const getAdmins = asyncHandler(async (req, res) => {
 
   const enrichedAdmins = admins.map((admin) => {
     const list = usersByAdmin.get(admin._id.toString()) || [];
+    const commission = commissionByAdmin.get(admin._id.toString());
+    const purchase = purchaseByAdmin.get(admin._id.toString());
     return {
       ...admin.toObject(),
       joinedUsersCount: list.length,
       joinedUsers: list,
+      totalCommissionEarned: commission?.totalCommissionEarned || 0,
+      commissionCount: commission?.commissionCount || 0,
+      totalPurchase: purchase?.totalPurchase || 0,
+      purchaseCount: purchase?.purchaseCount || 0,
     };
   });
 
@@ -337,6 +388,9 @@ export const createAdmin = asyncHandler(async (req, res) => {
       .filter(Boolean)
       .join(' ');
 
+    const settings = await getSettings();
+    const defaultRate = settings.adminCommissionRate ?? 2;
+
     const admin = await User.create({
       name: composedName,
       firstName: firstName.trim(),
@@ -347,7 +401,7 @@ export const createAdmin = asyncHandler(async (req, res) => {
         ? { email: parsed.value }
         : { mobile_number: parsed.value }),
       role: ROLES.ADMIN,
-      commissionRate: commissionRate ?? 2,
+      commissionRate: commissionRate ?? defaultRate,
       createdBy: req.user._id,
       isActive: true,
       isEmailVerified: parsed.type === 'email',
@@ -389,13 +443,16 @@ export const createAdmin = asyncHandler(async (req, res) => {
     return sendError(res, 400, 'Mobile already exists');
   }
 
+  const settings = await getSettings();
+  const defaultRate = settings.adminCommissionRate ?? 2;
+
   const admin = await User.create({
     name,
     email,
     ...(legacyMobile ? { mobile_number: legacyMobile } : {}),
     password,
     role: ROLES.ADMIN,
-    commissionRate: commissionRate ?? 2,
+    commissionRate: commissionRate ?? defaultRate,
     createdBy: req.user._id,
     isActive: true,
     isEmailVerified: true,

@@ -26,6 +26,7 @@ export const updateInterestSettings = asyncHandler(async (req, res) => {
     'penaltyEnabled', 'bounceCharge', 'prepaymentCharge', 'prepaymentChargePercent',
     'foreclosureCharge', 'foreclosureChargePercent', 'allowedTenures',
     'customTenureAllowed', 'minLoanAmount', 'maxLoanAmount', 'loanTypeRates',
+    'adminCommissionRate',
   ];
 
   allowedFields.forEach((field) => {

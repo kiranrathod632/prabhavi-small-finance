@@ -446,7 +446,7 @@ const AdminLoans = () => {
           <div>
             <h3 className="text-lg font-semibold mb-3">{t('adminLoans.selectTenure')} <span className="text-red-500">*</span></h3>
             <div className="flex flex-wrap gap-2">
-              {TENURE_OPTIONS.map((tenure) => (
+              {/* {TENURE_OPTIONS.map((tenure) => (
                 <button
                   key={tenure}
                   type="button"
@@ -462,7 +462,7 @@ const AdminLoans = () => {
                 >
                   {t('adminLoans.months', { count: tenure })}
                 </button>
-              ))}
+              ))} */}
             </div>
             <div className="mt-3">
               <label className="label">{t('adminLoans.manualTenure')}</label>
@@ -573,7 +573,7 @@ const AdminLoans = () => {
             )}
           </div> */}
 
-          <div>
+          {/* <div>
             <h3 className="text-lg font-semibold mb-3">{t('adminLoans.gstConfig')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
@@ -613,7 +613,7 @@ const AdminLoans = () => {
                 </>
               )}
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
             <h3 className="font-semibold mb-2">{t('adminLoans.disbursementSummary')}</h3>
