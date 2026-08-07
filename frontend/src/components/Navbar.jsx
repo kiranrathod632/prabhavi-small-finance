@@ -6,6 +6,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { Link } from 'react-router-dom';
 import LanguageSelector from './LanguageSelector';
 import { getDashboardPath, isAdminPanelRole } from '../utils/roles';
+import { resolveMediaUrl } from '../utils/helpers';
 
 const UnreadBadge = ({ count }) => {
   if (!count || count < 1) return null;
@@ -70,7 +71,7 @@ const Navbar = ({ onMenuClick }) => {
           <div className="flex items-center gap-2 pl-2 sm:pl-3 ml-0.5 border-l border-primary-200 dark:border-primary-700">
             <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-brand rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-glow-sm ring-2 ring-accent-400/30 overflow-hidden">
               {user?.avatar ? (
-                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={resolveMediaUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
               ) : (
                 user?.name?.charAt(0)?.toUpperCase()
               )}

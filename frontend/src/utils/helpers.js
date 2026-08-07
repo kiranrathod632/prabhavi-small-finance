@@ -135,6 +135,27 @@ export const getShortName = (user) => {
 };
 
 /**
+ * Backend origin for static files (/uploads), derived from VITE_API_URL.
+ * Empty string when API is same-origin (Vite proxy).
+ */
+export const resolveApiOrigin = () => {
+  const raw = String(import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+  if (!raw || raw.startsWith('/')) return '';
+  return raw.replace(/\/api$/i, '');
+};
+
+/**
+ * Resolve avatar / upload paths for <img src>.
+ */
+export const resolveMediaUrl = (path) => {
+  if (!path) return '';
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  const origin = resolveApiOrigin();
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return origin ? `${origin}${normalized}` : normalized;
+};
+
+/**
  * Extract error message from API error
  */
 export const getErrorMessage = (error) => {

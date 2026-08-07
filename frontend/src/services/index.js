@@ -87,8 +87,8 @@ export const userAPI = {
 export const profileAPI = {
   get: () => api.get('/profile'),
   update: (data) => api.put('/profile', data),
-  uploadAvatar: (formData) => api.post('/profile/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  uploadDocument: (formData) => api.post('/profile/documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadAvatar: (formData) => api.post('/profile/avatar', formData),
+  uploadDocument: (formData) => api.post('/profile/documents', formData),
 };
 
 // Loans

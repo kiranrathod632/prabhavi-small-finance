@@ -32,14 +32,16 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const allowedExt = /jpeg|jpg|png|gif|webp|pdf|doc|docx/;
+  const extname = allowedExt.test(path.extname(file.originalname).toLowerCase());
+  const mimetype =
+    /^image\//.test(file.mimetype) ||
+    allowedExt.test((file.mimetype || '').toLowerCase());
 
   if (extname && mimetype) {
     cb(null, true);
   } else {
-    cb(new Error('Only images (JPEG, PNG, GIF) and documents (PDF, DOC) are allowed'), false);
+    cb(new Error('Only images (JPEG, PNG, GIF, WEBP) and documents (PDF, DOC) are allowed'), false);
   }
 };
 

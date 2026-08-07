@@ -11,13 +11,40 @@ import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
 import { HiDownload, HiCash, HiDeviceMobile } from 'react-icons/hi';
 
 const UPI_QR_SRC = '/payments/phonepe-upi-qr.png';
-const PHONEPE_APP_URL = 'phonepe://';
 const PHONEPE_FALLBACK_URL = 'https://www.phonepe.com/';
 
-const openPhonePe = () => {
+/** Open PhonePe / UPI pay intent (direct pay when VITE_UPI_ID is set). */
+const openPhonePePay = ({ amount, note } = {}) => {
+  const upiId = String(import.meta.env.VITE_UPI_ID || '').trim();
+  const upiName = String(import.meta.env.VITE_UPI_NAME || 'Prabhavi Small Finance').trim();
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  const am = amount != null && Number(amount) > 0 ? Number(amount).toFixed(2) : '';
+
+  if (upiId) {
+    const params = new URLSearchParams({
+      pa: upiId,
+      pn: upiName,
+      cu: 'INR',
+      tn: note || 'EMI Payment',
+    });
+    if (am) params.set('am', am);
+    const qs = params.toString();
+    const phonepeUrl = `phonepe://pay?${qs}`;
+    const upiUrl = `upi://pay?${qs}`;
+
+    if (isMobile) {
+      window.location.href = phonepeUrl;
+      setTimeout(() => {
+        window.location.href = upiUrl;
+      }, 900);
+      return;
+    }
+    window.open(upiUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
   if (isMobile) {
-    window.location.href = PHONEPE_APP_URL;
+    window.location.href = 'phonepe://pay';
     setTimeout(() => {
       window.open(PHONEPE_FALLBACK_URL, '_blank', 'noopener,noreferrer');
     }, 1200);
@@ -68,7 +95,11 @@ const EMIs = () => {
     setPaying(true);
     try {
       if (paymentMethod === 'upi') {
-        openPhonePe();
+        const total = (payEmi.amount || 0) + (payEmi.penalty || 0);
+        openPhonePePay({
+          amount: total,
+          note: `EMI #${payEmi.emiNumber || ''}`.trim(),
+        });
       }
       await emiAPI.pay({ emiId: payEmi._id, paymentMethod });
       toast.success(t('ui.emiPaymentRequested'));

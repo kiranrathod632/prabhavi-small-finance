@@ -54,10 +54,7 @@ export const adminPanelAPI = {
   // Purchases / expenses (approve → fund deduct)
   getPurchases: (params) => adminApi.get('/purchases', { params }),
   getPurchaseSummary: () => adminApi.get('/purchases/summary'),
-  createPurchase: (formData) =>
-    adminApi.post('/purchases', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  createPurchase: (formData) => adminApi.post('/purchases', formData),
   approvePurchase: (id, data) => adminApi.put(`/purchases/${id}/approve`, data || {}),
   rejectPurchase: (id, data) => adminApi.put(`/purchases/${id}/reject`, data || {}),
 

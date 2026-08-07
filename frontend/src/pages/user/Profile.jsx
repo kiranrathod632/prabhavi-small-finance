@@ -12,7 +12,7 @@ import {
 } from 'react-icons/hi';
 import { profileAPI, authAPI } from '../../services';
 import { useAuth } from '../../context/AuthContext';
-import { getErrorMessage } from '../../utils/helpers';
+import { getErrorMessage, resolveMediaUrl } from '../../utils/helpers';
 import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
 import LanguageSelector from '../../components/LanguageSelector';
 import PageHeader from '../../components/PageHeader';
@@ -87,16 +87,18 @@ const Profile = () => {
   };
 
   const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       await profileAPI.uploadAvatar(formData);
       toast.success(t('success'));
-      fetchUser();
+      await fetchUser();
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -127,7 +129,7 @@ const Profile = () => {
             <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full p-0.5 sm:p-1 bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-400 shadow-glow-sm">
               <div className="w-full h-full rounded-full bg-primary-600 flex items-center justify-center text-white text-xl sm:text-3xl font-bold overflow-hidden">
                 {user?.avatar ? (
-                  <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   displayName?.charAt(0)?.toUpperCase()
                 )}

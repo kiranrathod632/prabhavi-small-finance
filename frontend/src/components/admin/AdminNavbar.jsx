@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useAdminCounts } from '../../context/AdminCountsContext';
 import { ROLES } from '../../utils/roles';
+import { resolveMediaUrl } from '../../utils/helpers';
 import LanguageSelector from '../LanguageSelector';
 
 const getAdminBase = (role) => {
@@ -97,7 +98,7 @@ const AdminNavbar = ({ onMenuClick }) => {
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-brand rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-bold shadow-glow-sm ring-2 ring-accent-400/30 overflow-hidden">
               {user?.avatar ? (
-                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                <img src={resolveMediaUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
               ) : (
                 user?.name?.charAt(0)?.toUpperCase()
               )}
