@@ -145,7 +145,7 @@ export const getAdmins = asyncHandler(async (req, res) => {
       role: ROLES.USER,
       adminId: { $in: adminIds },
       isDeleted: { $ne: true },
-    }).select('name email mobile_number adminId walletBalance createdAt isActive').sort('-createdAt')
+    }).select('name firstName lastName email mobile_number adminId walletBalance createdAt isActive').sort('-createdAt')
     : [];
 
   const joinedUserIds = joinedUsers.map((u) => u._id);

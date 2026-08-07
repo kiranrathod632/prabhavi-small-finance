@@ -7,10 +7,10 @@ import { PageLoader } from '../components/LoadingSpinner';
 import BrandLogo from '../components/BrandLogo';
 import { getDashboardPath, isAdminPanelRole } from '../utils/roles';
 
-const BOARD_HIGHLIGHTS = [
-  { name: 'विठ्ठल दारासिंग राठोड', role: 'अध्यक्ष', phone: '8407912252' },
-  { name: 'रमेश रामलाल राठोड', role: 'उपाध्यक्ष', phone: '8459050109' },
-];
+// const BOARD_HIGHLIGHTS = [
+//   { name: 'विठ्ठल दारासिंग राठोड', role: 'अध्यक्ष', phone: '8407912252' },
+//   { name: 'रमेश रामलाल राठोड', role: 'उपाध्यक्ष', phone: '8459050109' },
+// ];
 
 const AuthLayout = () => {
   const { user, loading } = useAuth();
@@ -78,7 +78,7 @@ const AuthLayout = () => {
                 📍 महाराष्ट्र पाचोरा · स्थापना ४ जुलै २०१९
               </p>
               <div className="space-y-2.5">
-                {BOARD_HIGHLIGHTS.map((m) => (
+                {/* {BOARD_HIGHLIGHTS.map((m) => (
                   <div key={m.phone} className="flex items-start justify-between gap-3 text-sm">
                     <span className={`leading-snug ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                       {m.name}{' '}
@@ -95,7 +95,7 @@ const AuthLayout = () => {
                       {m.phone}
                     </a>
                   </div>
-                ))}
+                ))} */}
               </div>
             </div>
           </div>

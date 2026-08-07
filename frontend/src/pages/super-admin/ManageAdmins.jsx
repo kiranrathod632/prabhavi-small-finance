@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { HiEye } from 'react-icons/hi';
+import { HiEye, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import adminPanelAPI from '../../services/adminPanelAPI';
-import { getErrorMessage, formatCurrency } from '../../utils/helpers';
+import { getErrorMessage, formatCurrency, getShortName } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
@@ -25,6 +25,7 @@ const ManageAdmins = () => {
   const [viewAdmin, setViewAdmin] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [createStep, setCreateStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     credential: '',
     otp: '',
@@ -53,6 +54,7 @@ const ManageAdmins = () => {
 
   const resetCreateForm = () => {
     setCreateStep(1);
+    setShowPassword(false);
     setForm({
       credential: '',
       otp: '',
@@ -254,7 +256,7 @@ const ManageAdmins = () => {
               {admins.map((admin, index) => (
                 <tr key={admin._id}>
                   <td className="text-slate-500">{index + 1}</td>
-                  <td className="font-medium whitespace-nowrap">{admin.name}</td>
+                  <td className="font-medium whitespace-nowrap">{getShortName(admin)}</td>
                   <td className="whitespace-nowrap">{adminPhone(admin)}</td>
                   <td>
                     <button
@@ -415,15 +417,26 @@ const ManageAdmins = () => {
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                   required
                 />
-                <input
-                  className="input"
-                  type="password"
-                  placeholder={t('password')}
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  minLength={6}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    className="input pr-10"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('password')}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    minLength={6}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md text-slate-400 hover:text-violet-500 transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <HiOutlineEyeOff className="w-4 h-4" /> : <HiOutlineEye className="w-4 h-4" />}
+                  </button>
+                </div>
                 <button type="submit" disabled={submitting} className="btn-primary w-full">
                   {submitting ? <LoadingSpinner size="sm" /> : t('create')}
                 </button>
@@ -436,7 +449,7 @@ const ManageAdmins = () => {
       <Modal
         isOpen={!!viewAdmin}
         onClose={() => setViewAdmin(null)}
-        title={viewAdmin ? `${t('manageAdmins.joinedUsersList')} — ${viewAdmin.name}` : ''}
+        title={viewAdmin ? `${t('manageAdmins.joinedUsersList')} — ${getShortName(viewAdmin)}` : ''}
         size="xl"
       >
         {joinedUsers.length ? (
@@ -448,7 +461,7 @@ const ManageAdmins = () => {
                   <div key={user._id} className="mobile-list-item">
                     <div className="mobile-list-head">
                       <div className="min-w-0">
-                        <p className="mobile-list-title">{user.name}</p>
+                        <p className="mobile-list-title">{getShortName(user)}</p>
                         <p className="mobile-list-meta">{user.mobile_number || '-'}</p>
                       </div>
                     </div>
@@ -501,7 +514,7 @@ const ManageAdmins = () => {
                     const summary = user.summary || {};
                     return (
                       <tr key={user._id}>
-                        <td className="font-medium">{user.name}</td>
+                        <td className="font-medium">{getShortName(user)}</td>
                         <td>{user.mobile_number || '-'}</td>
                         <td>{summary.totalEMIs || 0}</td>
                         <td>{summary.pendingEMIs || 0}</td>

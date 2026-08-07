@@ -4,6 +4,7 @@ import { getSettings } from './settingsService.js';
 import { calculatePenalty } from '../utils/helpers.js';
 import { createNotification } from './notificationService.js';
 import { sendPenaltySms, sendEmiReminderSms } from './smsService.js';
+import { sendEmiReminderCall } from './voiceService.js';
 import { sendEMIReminderEmail } from './emailService.js';
 import User from '../models/User.js';
 import RecoveryCase from '../models/RecoveryCase.js';
@@ -143,6 +144,80 @@ export const sendUpcomingReminders = async () => {
 
   console.log(`[EMI Reminder] Checked due=${targetDue.toDateString()} | SMS sent=${sent}`);
   return { sent, dueDate: targetDue.toISOString().slice(0, 10) };
+};
+
+/**
+ * Place Twilio voice calls for EMIs due in 2 days.
+ * slot: 'morning' (11 AM) | 'evening' (6 PM)
+ * Does not change SMS reminders or API responses.
+ */
+export const sendUpcomingReminderCalls = async (slot = 'morning') => {
+  const isEvening = String(slot).toLowerCase() === 'evening';
+  const sentField = isEvening ? 'reminderCallEveningSentAt' : 'reminderCallMorningSentAt';
+  const slotLabel = isEvening ? 'evening-6PM' : 'morning-11AM';
+
+  const today = new Date();
+  const targetDue = new Date(today);
+  targetDue.setDate(targetDue.getDate() + 2);
+  targetDue.setHours(0, 0, 0, 0);
+
+  const targetDueEnd = new Date(targetDue);
+  targetDueEnd.setHours(23, 59, 59, 999);
+
+  const upcomingEmis = await EMI.find({
+    status: { $in: ['pending', 'partial'] },
+    dueDate: { $gte: targetDue, $lte: targetDueEnd },
+    [sentField]: null,
+    isDeleted: { $ne: true },
+  })
+    .populate('loan', 'loanId')
+    .populate('user', 'name email mobile mobile_number');
+
+  let called = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  for (const emi of upcomingEmis) {
+    const userMobile = emi.user?.mobile_number || emi.user?.mobile;
+    if (!userMobile) {
+      skipped += 1;
+      continue;
+    }
+
+    const payAmount = emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount;
+    const callResult = await sendEmiReminderCall(
+      userMobile,
+      emi.emiNumber,
+      payAmount,
+      emi.dueDate
+    );
+
+    if (callResult?.success) {
+      emi[sentField] = new Date();
+      await emi.save({ validateBeforeSave: false });
+      called += 1;
+      console.log(
+        `[EMI Call Reminder] ✅ ${slotLabel} → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(payAmount || 0)}`
+      );
+    } else {
+      failed += 1;
+      console.error(
+        `[EMI Call Reminder] ❌ ${slotLabel} → ${userMobile} | ${emi.emiNumber}:`,
+        callResult?.error || 'unknown error'
+      );
+    }
+  }
+
+  console.log(
+    `[EMI Call Reminder] slot=${slotLabel} due=${targetDue.toDateString()} | called=${called} | failed=${failed} | skipped=${skipped}`
+  );
+  return {
+    slot: slotLabel,
+    called,
+    failed,
+    skipped,
+    dueDate: targetDue.toISOString().slice(0, 10),
+  };
 };
 
 /**

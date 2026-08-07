@@ -85,7 +85,7 @@ export const listPublicAdmins = asyncHandler(async (_req, res) => {
     isSuspended: { $ne: true },
     isDeleted: { $ne: true },
   })
-    .select('_id name')
+    .select('_id name firstName lastName')
     .sort('name');
 
   sendResponse(res, 200, 'Admins fetched', admins);

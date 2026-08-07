@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import adminPanelAPI from '../../services/adminPanelAPI';
-import { formatCurrency, formatDate, getErrorMessage, getFullName } from '../../utils/helpers';
+import { formatCurrency, formatDate, getErrorMessage, getFullName, getShortName } from '../../utils/helpers';
 import { PAYMENT_METHODS } from '../../utils/roles';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
@@ -139,7 +139,7 @@ const UserDetail = () => {
           </div>
           <div>
             <span className="text-gray-500">{t('userDetail.underAdmin')}:</span>{' '}
-            {owningAdmin?.name || '-'}
+            {getShortName(owningAdmin)}
             {owningAdmin?.commissionRate != null ? ` (${owningAdmin.commissionRate}%)` : ''}
           </div>
           <div><span className="text-gray-500">{t('ui.joined')}:</span> {formatDate(user.createdAt)}</div>

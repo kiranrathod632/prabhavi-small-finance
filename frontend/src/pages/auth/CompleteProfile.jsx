@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { completeProfileSetup } from '../../services/authService';
-import { getErrorMessage } from '../../utils/helpers';
+import { getErrorMessage, getShortName } from '../../utils/helpers';
 import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
 import BrandLogo from '../../components/BrandLogo';
 
@@ -127,7 +127,7 @@ const CompleteProfile = () => {
                   {adminsLoading ? t('loading') : t('userRegister.selectAdminPlaceholder')}
                 </option>
                 {admins.map((admin) => (
-                  <option key={admin._id} value={admin._id}>{admin.name}</option>
+                  <option key={admin._id} value={admin._id}>{getShortName(admin)}</option>
                 ))}
               </select>
               {errors.adminId && <p className="auth-error">{errors.adminId.message}</p>}

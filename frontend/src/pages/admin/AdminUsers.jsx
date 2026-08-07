@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import adminPanelAPI from '../../services/adminPanelAPI';
 import api from '../../services/api';
 import { ROLES } from '../../utils/roles';
-import { formatCurrency, formatDateTime, getErrorMessage, downloadBlob, getFullName } from '../../utils/helpers';
+import { formatCurrency, formatDateTime, getErrorMessage, downloadBlob, getShortName } from '../../utils/helpers';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
@@ -260,11 +260,11 @@ const AdminUsers = () => {
                       onClick={() => navigate(`${base}/users/${user._id}`)}
                       className="link-accent text-left"
                     >
-                      {getFullName(user) || user.name || 'N/A'}
+                      {getShortName(user) || user.name || 'N/A'}
                     </button>
                   </td>
                   <td>{mobileOf(user)}</td>
-                  <td>{user.adminId?.name || 'N/A'}</td>
+                  <td>{getShortName(user.adminId)}</td>
                   <td className="text-right">{formatCurrency(user.walletBalance)}</td>
                   <td>{statusLabel(user)}</td>
                   <td className="whitespace-nowrap">{formatDateTime(user.createdAt)}</td>
@@ -365,7 +365,7 @@ const AdminUsers = () => {
                 <option value="">{t('adminUsers.selectAdminPlaceholder')}</option>
                 {admins.map((a) => (
                   <option key={a._id} value={a._id}>
-                    {a.name}{a.email ? ` (${a.email})` : ''}
+                    {getShortName(a)}{a.email ? ` (${a.email})` : ''}
                   </option>
                 ))}
               </select>

@@ -47,7 +47,7 @@ export const getUsers = asyncHandler(async (req, res) => {
 
   let usersQuery = User.find(filter).sort(sort).skip(skip).limit(limit);
   if (includeAdmin === 'true' || includeAdmin === '1') {
-    usersQuery = usersQuery.populate('adminId', 'name email');
+    usersQuery = usersQuery.populate('adminId', 'name email firstName lastName');
   }
 
   const [users, total] = await Promise.all([
@@ -60,7 +60,7 @@ export const getUsers = asyncHandler(async (req, res) => {
 
 
 export const getUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id).populate('adminId', 'name email commissionRate');
+  const user = await User.findById(req.params.id).populate('adminId', 'name email commissionRate firstName lastName');
   if (!user) return sendError(res, 404, 'User not found');
 
   if (user.role === ROLES.USER) {

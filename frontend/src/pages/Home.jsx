@@ -19,14 +19,14 @@ const Home = () => {
   ];
 
   const team = [
-    { name: t('home.member1Name'), role: t('home.member1Role'), phone: '8407912252' },
-    { name: t('home.member2Name'), role: t('home.member2Role'), phone: '8459050109' },
-    { name: t('home.member3Name'), role: t('home.member3Role'), phone: '7498502572' },
-    { name: t('home.member4Name'), role: t('home.member4Role'), phone: '8080178939' },
-    { name: t('home.member5Name'), role: t('home.member5Role'), phone: '9322361650' },
-    { name: t('home.member6Name'), role: t('home.member6Role'), phone: '9529817258' },
-    { name: t('home.member7Name'), role: t('home.member7Role'), phone: '7875048923' },
-    { name: t('home.member8Name'), role: t('home.member8Role'), phone: '7822026084' },
+    { name: t('home.member1Name'), role: t('home.member1Role'), phone: '8407912252', image: '/team/vitthal.png' },
+    { name: t('home.member2Name'), role: t('home.member2Role'), phone: '8459050109', image: '/team/ramesh.png' },
+    { name: t('home.member3Name'), role: t('home.member3Role'), phone: '7498502572', image: '/team/bhaidas.png' },
+    { name: t('home.member4Name'), role: t('home.member4Role'), phone: '8080178939', image: '/team/yuvraj.png' },
+    { name: t('home.member5Name'), role: t('home.member5Role'), phone: '9322361650', image: '/team/vilas.png' },
+    { name: t('home.member6Name'), role: t('home.member6Role'), phone: '9529817258', image: '/team/rajendra.png' },
+    { name: t('home.member7Name'), role: t('home.member7Role'), phone: '7875048923', image: '/team/bhagvat.png' },
+    { name: t('home.member8Name'), role: t('home.member8Role'), phone: '7822026084', image: '/team/bharat.png' },
   ];
 
   const closeMenu = () => setMenuOpen(false);
@@ -189,7 +189,13 @@ const Home = () => {
           <div className="team-hex-grid">
             {team.map((m, i) => (
               <div key={m.phone} className="team-hex-card" style={{ animationDelay: `${i * 0.06}s` }}>
-                <div className="team-hex" aria-hidden="true">{m.name.charAt(0)}</div>
+                <div className="team-hex" aria-hidden="true">
+                  {m.image ? (
+                    <img src={m.image} alt="" className="team-hex-img" />
+                  ) : (
+                    m.name.charAt(0)
+                  )}
+                </div>
                 <h3 className="team-hex-name">{m.name}</h3>
                 <p className="team-hex-role">{m.role}</p>
                 <a href={`tel:${m.phone}`} className="team-hex-phone">{m.phone}</a>

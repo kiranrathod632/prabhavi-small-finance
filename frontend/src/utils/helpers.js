@@ -123,6 +123,18 @@ export const getFullName = (user) => {
 };
 
 /**
+ * Display name: first + last only (no middle). Falls back to name.
+ */
+export const getShortName = (user) => {
+  if (!user) return '-';
+  const composed = [user.firstName, user.lastName]
+    .map((part) => (part || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return composed || user.name || '-';
+};
+
+/**
  * Extract error message from API error
  */
 export const getErrorMessage = (error) => {

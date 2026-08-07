@@ -721,7 +721,7 @@
     @apply hidden md:block;
   }
 
-  /* Hexagon team cards */
+  /* Team cards — circular avatars */
   .team-hex-grid {
     @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6;
   }
@@ -735,17 +735,24 @@
   }
 
   .team-hex {
-    @apply relative flex items-center justify-center text-white font-bold text-base sm:text-lg mb-2.5 sm:mb-3;
-    width: 4.25rem;
-    height: 4.75rem;
+    @apply relative flex items-center justify-center text-white font-bold text-base sm:text-lg mb-2.5 sm:mb-3 overflow-hidden rounded-full;
+    width: 5.5rem;
+    height: 5.5rem;
     background: var(--gradient-main);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
     transition: transform 0.35s ease, box-shadow 0.35s ease;
   }
 
+  .team-hex-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    display: block;
+  }
+
   .team-hex-card:hover .team-hex {
-    transform: scale(1.08) rotate(8deg);
+    transform: scale(1.08);
     box-shadow: 0 12px 32px rgba(0, 210, 255, 0.35);
   }
 
