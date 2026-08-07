@@ -5,10 +5,26 @@ import { emiAPI } from '../../services';
 import { formatCurrency, formatDate, getErrorMessage } from '../../utils/helpers';
 import Badge from '../../components/Badge';
 import Pagination from '../../components/Pagination';
-import ConfirmDialog from '../../components/ConfirmDialog';
+import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
-import { PageLoader } from '../../components/LoadingSpinner';
-import { HiDownload } from 'react-icons/hi';
+import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
+import { HiDownload, HiCash, HiDeviceMobile } from 'react-icons/hi';
+
+const UPI_QR_SRC = '/payments/phonepe-upi-qr.png';
+const PHONEPE_APP_URL = 'phonepe://';
+const PHONEPE_FALLBACK_URL = 'https://www.phonepe.com/';
+
+const openPhonePe = () => {
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  if (isMobile) {
+    window.location.href = PHONEPE_APP_URL;
+    setTimeout(() => {
+      window.open(PHONEPE_FALLBACK_URL, '_blank', 'noopener,noreferrer');
+    }, 1200);
+    return;
+  }
+  window.open(PHONEPE_FALLBACK_URL, '_blank', 'noopener,noreferrer');
+};
 
 const EMIs = () => {
   const { t } = useTranslation();
@@ -18,6 +34,8 @@ const EMIs = () => {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [payEmi, setPayEmi] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paying, setPaying] = useState(false);
 
   const fetchEMIs = async () => {
     setLoading(true);
@@ -34,14 +52,33 @@ const EMIs = () => {
 
   useEffect(() => { fetchEMIs(); }, [page, status]);
 
+  const openPay = (emi) => {
+    setPaymentMethod('cash');
+    setPayEmi(emi);
+  };
+
+  const closePay = () => {
+    if (paying) return;
+    setPayEmi(null);
+    setPaymentMethod('cash');
+  };
+
   const handlePay = async () => {
+    if (!payEmi) return;
+    setPaying(true);
     try {
-      await emiAPI.pay({ emiId: payEmi._id });
+      if (paymentMethod === 'upi') {
+        openPhonePe();
+      }
+      await emiAPI.pay({ emiId: payEmi._id, paymentMethod });
       toast.success(t('ui.emiPaymentRequested'));
       setPayEmi(null);
+      setPaymentMethod('cash');
       fetchEMIs();
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -61,11 +98,12 @@ const EMIs = () => {
   if (loading && !emis.length) return <PageLoader />;
 
   const statusOptions = ['pending', 'pending_collection', 'paid', 'overdue'];
+  const payAmount = formatCurrency((payEmi?.amount || 0) + (payEmi?.penalty || 0));
 
   const emiActions = (emi) => (
     <>
       {(emi.status === 'pending' || emi.status === 'overdue') && (
-        <button type="button" onClick={() => setPayEmi(emi)} className="btn-primary action-chip">{t('ui.payNow')}</button>
+        <button type="button" onClick={() => openPay(emi)} className="btn-primary action-chip">{t('ui.payNow')}</button>
       )}
       {emi.status === 'pending_collection' && (
         <span className="text-xs text-slate-500">{t('ui.awaitingCollection')}</span>
@@ -173,17 +211,73 @@ const EMIs = () => {
 
       <Pagination meta={meta} onPageChange={setPage} />
 
-      <ConfirmDialog
-        isOpen={!!payEmi}
-        onClose={() => setPayEmi(null)}
-        onConfirm={handlePay}
-        title={t('ui.payEmi')}
-        message={t('ui.payEmiConfirm', {
-          number: payEmi?.emiNumber,
-          amount: formatCurrency((payEmi?.amount || 0) + (payEmi?.penalty || 0)),
-        })}
-        confirmText={t('ui.payNow')}
-      />
+      <Modal isOpen={!!payEmi} onClose={closePay} title={t('ui.payEmi')} size="sm">
+        <div className="space-y-4">
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {t('ui.payEmiConfirm', {
+              number: payEmi?.emiNumber,
+              amount: payAmount,
+            })}
+          </p>
+
+          <div>
+            <label className="label">{t('emi.paymentMethod')}</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
+                  paymentMethod === 'cash'
+                    ? 'border-accent-400 bg-accent-400/10 text-accent-600 dark:text-accent-400'
+                    : 'border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <HiCash className="w-5 h-5" />
+                {t('paymentMethod.cash')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('upi')}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-sm font-medium transition-all ${
+                  paymentMethod === 'upi'
+                    ? 'border-accent-400 bg-accent-400/10 text-accent-600 dark:text-accent-400'
+                    : 'border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5'
+                }`}
+              >
+                <HiDeviceMobile className="w-5 h-5" />
+                {t('ui.onlineUpi')}
+              </button>
+            </div>
+          </div>
+
+          {paymentMethod === 'upi' && (
+            <div className="rounded-xl border border-black/10 dark:border-white/10 p-3 space-y-3 bg-black/[0.02] dark:bg-white/[0.03]">
+              <p className="text-center text-xs sm:text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('ui.scanUpiQr')}
+              </p>
+              <div className="mx-auto w-44 h-44 sm:w-52 sm:h-52 rounded-lg overflow-hidden bg-white p-2 shadow-sm">
+                <img
+                  src={UPI_QR_SRC}
+                  alt="PhonePe UPI QR"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <p className="text-center text-[11px] sm:text-xs" style={{ color: 'var(--text-muted)' }}>
+                {t('ui.upiPayHint')}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-end pt-1">
+            <button type="button" onClick={closePay} disabled={paying} className="btn-secondary">
+              {t('cancel')}
+            </button>
+            <button type="button" onClick={handlePay} disabled={paying} className="btn-primary min-w-[7rem]">
+              {paying ? <LoadingSpinner size="sm" /> : t('ui.payNow')}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
