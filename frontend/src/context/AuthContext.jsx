@@ -118,6 +118,7 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     fetchUser: refreshUser,
     needsProfileSetup,
+    kycCompleted: !!user?.kycCompleted,
     isAuthenticated: !!user,
     isAdmin: role === 'admin' || role === 'super_admin',
     isSuperAdmin: role === 'super_admin',

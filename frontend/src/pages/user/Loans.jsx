@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { loanAPI } from '../../services';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate, getErrorMessage, loanTypes } from '../../utils/helpers';
 import Badge from '../../components/Badge';
 import SearchBar from '../../components/SearchBar';
@@ -23,6 +24,8 @@ const LOAN_TYPE_KEYS = {
 
 const Loans = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [loans, setLoans] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,22 @@ const Loans = () => {
   const [page, setPage] = useState(1);
   const [showApply, setShowApply] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
+
+  const canApplyLoan = user?.profileSetupComplete !== false && user?.kycCompleted === true;
+
+  const handleApplyClick = () => {
+    if (user?.profileSetupComplete === false) {
+      toast.error(t('kyc.completeProfileFirst'));
+      navigate('/complete-profile');
+      return;
+    }
+    if (!user?.kycCompleted) {
+      toast.error(t('kyc.completeKycFirst'));
+      navigate('/profile');
+      return;
+    }
+    setShowApply(true);
+  };
 
   const fetchLoans = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -109,11 +128,18 @@ const Loans = () => {
       <PageHeader
         title={t('myLoans')}
         actions={
-          <button type="button" onClick={() => setShowApply(true)} className="btn-primary">
+          <button type="button" onClick={handleApplyClick} className="btn-primary">
             <HiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('ui.applyLoan')}
           </button>
         }
       />
+
+      {!canApplyLoan && (
+        <div className="rounded-xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+          {t('kyc.loanBlockedHint')}{' '}
+          <Link to="/profile" className="font-semibold underline">{t('profile')}</Link>
+        </div>
+      )}
 
       <div className="filter-bar">
         <SearchBar value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder={t('ui.searchLoans')} className="w-full sm:w-64" />

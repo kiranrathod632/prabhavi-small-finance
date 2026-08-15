@@ -23,17 +23,282 @@ import {
 import { createCommissionForLoan } from '../services/commissionService.js';
 import { ROLES } from '../config/permissions.js';
 import { createNotification } from '../services/notificationService.js';
+import Profile from '../models/Profile.js';
+import { hasRequiredKycDocuments } from '../utils/kycHelpers.js';
 
 /**
  * @route   POST /api/loans
  */
 // controllers/loanController.js
+// export const createLoan = asyncHandler(async (req, res) => {
+//   const { loanType, amount, purpose, status: reqStatus } = req.body;
+//   const userId = isStaffRole(req.user.role) && req.body.userId ? req.body.userId : req.user._id;
+
+//   const loanUser = await User.findById(userId);
+//   if (!loanUser) return sendError(res, 404, 'User not found');
+
+//   // End-users must finish profile setup + KYC docs before applying
+//   if (loanUser.role === ROLES.USER || loanUser.role === 'user') {
+//     if (loanUser.profileSetupComplete === false) {
+//       return sendError(res, 400, 'Please complete your profile before applying for a loan');
+//     }
+
+//     const profile = await Profile.findOne({ user: userId });
+//     const kycOk = loanUser.kycCompleted === true || hasRequiredKycDocuments(profile);
+//     if (!kycOk) {
+//       return sendError(
+//         res,
+//         400,
+//         'Please complete KYC by uploading Aadhaar card, PAN card, and bank photo before applying for a loan'
+//       );
+//     }
+
+//     // Keep User flag in sync if docs exist but flag was stale
+//     if (!loanUser.kycCompleted && kycOk) {
+//       loanUser.kycCompleted = true;
+//       await loanUser.save();
+//     }
+//   }
+
+//   const settings = await getSettings();
+//   if (amount < settings.minLoanAmount || amount > settings.maxLoanAmount) {
+//     return sendError(res, 400, `Loan amount must be between ₹${settings.minLoanAmount} and ₹${settings.maxLoanAmount}`);
+//   }
+
+//   const interestRate = req.body.interestRate || await getInterestRateForLoanType(loanType);
+//   const initialStatus = reqStatus === 'draft' ? 'draft' : 'pending';
+
+//   // ✅ Define adminId
+//   const adminId = loanUser.adminId || null;
+
+//   const loan = await Loan.create({
+//     user: userId,
+//     adminId: adminId,
+//     loanType,
+//     amount,
+//     interestRate,
+//     interestType: settings.interestType,
+//     interestRatePeriod: settings.interestRatePeriod,
+//     // purpose,
+//     status: initialStatus,
+//   });
+
+//   if (initialStatus === 'pending') {
+//     await addTimelineEvent({
+//       loan, 
+//       user: userId, 
+//       status: 'pending',
+//       title: 'Application Submitted',
+//       description: `Loan application for ₹${amount} submitted`,
+//       performedBy: req.user._id,
+//     });
+
+//     await notifyLoanUpdate(userId, loan, 'pending');
+//     const applicantMobile = loanUser.mobile_number || loanUser.mobile;
+//     if (applicantMobile) {
+//       await sendLoanStatusSms(applicantMobile, loan.loanId, 'pending');
+//     }
+
+//     // Notify assigned admin (SMS + in-app + push) with account details
+//     const recipientIds = new Set();
+//     if (loanUser.adminId) recipientIds.add(loanUser.adminId.toString());
+
+//     // Also keep super admins informed (existing coverage)
+//     const superAdmins = await User.find({
+//       role: ROLES.SUPER_ADMIN,
+//       isActive: true,
+//       isDeleted: { $ne: true },
+//     }).select('_id');
+//     superAdmins.forEach((sa) => recipientIds.add(sa._id.toString()));
+
+//     if (recipientIds.size) {
+//       const staffRecipients = await User.find({
+//         _id: { $in: [...recipientIds] },
+//         isActive: true,
+//         isDeleted: { $ne: true },
+//       }).select('_id mobile_number mobile role');
+
+//       const accountLabel = loanUser.mobile_number || loanUser.mobile || loanUser.email || 'N/A';
+//       for (const staff of staffRecipients) {
+//         await createNotification({
+//           user: staff._id,
+//           title: 'New Loan Application',
+//           message: `${loanUser.name} (Account: ${accountLabel}) applied for a loan of ₹${amount}. Loan ID: ${loan.loanId}.`,
+//           type: 'info',
+//           link: staff.role === ROLES.SUPER_ADMIN
+//             ? `/super-admin/loans`
+//             : `/admin/loans`,
+//           metadata: {
+//             loanId: loan.loanId,
+//             userId: loanUser._id.toString(),
+//             amount: String(amount),
+//           },
+//         });
+
+//         const adminMobile = staff.mobile_number || staff.mobile;
+//         if (adminMobile) {
+//           await sendLoanApplicationAdminSms({
+//             adminMobile,
+//             user: loanUser,
+//             loan,
+//           });
+//         }
+//       }
+//     }
+//   }
+
+//   await createAuditLog({
+//     user: req.user._id,
+//     action: `Loan application submitted: ${loan.loanId}`,
+//     entity: 'loan',
+//     entityId: loan._id,
+//     ipAddress: req.ip,
+//   });
+
+//   sendResponse(res, 201, 'Loan application submitted', loan);
+// });
+
 export const createLoan = asyncHandler(async (req, res) => {
   const { loanType, amount, purpose, status: reqStatus } = req.body;
   const userId = isStaffRole(req.user.role) && req.body.userId ? req.body.userId : req.user._id;
 
   const loanUser = await User.findById(userId);
   if (!loanUser) return sendError(res, 404, 'User not found');
+
+  // ✅ Check if user already has a pending/under_review/approved loan
+  const existingPendingLoan = await Loan.findOne({
+    user: userId,
+    status: { $in: ['pending', 'under_review', 'approved'] },
+    isDeleted: { $ne: true }
+  });
+
+  if (existingPendingLoan) {
+    const lastLoanDate = existingPendingLoan.createdAt;
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - lastLoanDate) / (1000 * 60 * 60 * 24));
+    
+    // ✅ Allow if more than 8 days have passed
+    if (daysDifference < 8) {
+      const remainingDays = 8 - daysDifference;
+      return sendResponse(
+        res,
+        200,
+        `You already have a pending loan application. You can apply for a new loan after ${remainingDays} day${remainingDays > 1 ? 's' : ''}.`,
+        {
+          loan: existingPendingLoan,
+          canApply: false,
+          remainingDays: remainingDays,
+          nextEligibleDate: new Date(lastLoanDate.getTime() + 8 * 24 * 60 * 60 * 1000)
+        }
+      );
+    }
+  }
+
+  // ✅ Check if user has any active loan
+  const existingActiveLoan = await Loan.findOne({
+    user: userId,
+    status: { $in: ['active', 'disbursed'] },
+    isDeleted: { $ne: true }
+  });
+
+  if (existingActiveLoan) {
+    const lastLoanDate = existingActiveLoan.createdAt;
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - lastLoanDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDifference < 8) {
+      const remainingDays = 8 - daysDifference;
+      return sendResponse(
+        res,
+        200,
+        `You have an active loan. You can apply for a new loan after ${remainingDays} day${remainingDays > 1 ? 's' : ''}.`,
+        {
+          loan: existingActiveLoan,
+          canApply: false,
+          remainingDays: remainingDays,
+          nextEligibleDate: new Date(lastLoanDate.getTime() + 8 * 24 * 60 * 60 * 1000)
+        }
+      );
+    }
+  }
+
+  // ✅ Check for recently closed loans (within last 8 days)
+  const recentlyClosedLoan = await Loan.findOne({
+    user: userId,
+    status: 'closed',
+    isDeleted: { $ne: true },
+    closedAt: { 
+      $gte: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+    }
+  });
+
+  if (recentlyClosedLoan) {
+    const closedDate = recentlyClosedLoan.closedAt;
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate - closedDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDifference < 8) {
+      const remainingDays = 8 - daysDifference;
+      return sendResponse(
+        res,
+        200,
+        `Your last loan was recently closed. You can apply for a new loan after ${remainingDays} day${remainingDays > 1 ? 's' : ''}.`,
+        {
+          loan: recentlyClosedLoan,
+          canApply: false,
+          remainingDays: remainingDays,
+          nextEligibleDate: new Date(closedDate.getTime() + 8 * 24 * 60 * 60 * 1000)
+        }
+      );
+    }
+  }
+
+  // ✅ Check for duplicate loan application (same amount, same type within last 5 minutes)
+  const duplicateLoan = await Loan.findOne({
+    user: userId,
+    status: { $in: ['pending', 'under_review', 'approved'] },
+    amount: amount,
+    loanType: loanType,
+    isDeleted: { $ne: true },
+    createdAt: { 
+      $gte: new Date(Date.now() - 5 * 60 * 1000)
+    }
+  });
+
+  if (duplicateLoan) {
+    return sendResponse(
+      res, 
+      200, 
+      'You have already submitted a loan application. Please wait for it to be processed.',
+      {
+        loan: duplicateLoan,
+        canApply: false
+      }
+    );
+  }
+
+  // End-users must finish profile setup + KYC docs before applying
+  if (loanUser.role === ROLES.USER || loanUser.role === 'user') {
+    if (loanUser.profileSetupComplete === false) {
+      return sendError(res, 400, 'Please complete your profile before applying for a loan');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    const kycOk = loanUser.kycCompleted === true || hasRequiredKycDocuments(profile);
+    if (!kycOk) {
+      return sendError(
+        res,
+        400,
+        'Please complete KYC by uploading Aadhaar card, PAN card, and bank photo before applying for a loan'
+      );
+    }
+
+    // Keep User flag in sync if docs exist but flag was stale
+    if (!loanUser.kycCompleted && kycOk) {
+      loanUser.kycCompleted = true;
+      await loanUser.save();
+    }
+  }
 
   const settings = await getSettings();
   if (amount < settings.minLoanAmount || amount > settings.maxLoanAmount) {
@@ -46,6 +311,41 @@ export const createLoan = asyncHandler(async (req, res) => {
   // ✅ Define adminId
   const adminId = loanUser.adminId || null;
 
+  // ✅ Generate unique loanId with retry mechanism
+  let loanId;
+  let isUnique = false;
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  while (!isUnique && attempts < maxAttempts) {
+    // Get the latest loan to generate next number
+    const lastLoan = await Loan.findOne({ isDeleted: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .select('loanId');
+    
+    let nextNumber = 1;
+    if (lastLoan && lastLoan.loanId) {
+      const match = lastLoan.loanId.match(/LN(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    
+    loanId = `LN${String(nextNumber).padStart(6, '0')}`;
+    
+    // Check if this loanId already exists
+    const existingLoan = await Loan.findOne({ loanId, isDeleted: { $ne: true } });
+    if (!existingLoan) {
+      isUnique = true;
+    }
+    attempts++;
+  }
+
+  if (!isUnique) {
+    // Fallback: use timestamp based unique ID
+    loanId = `LN${Date.now().toString().slice(-6)}`;
+  }
+
   const loan = await Loan.create({
     user: userId,
     adminId: adminId,
@@ -56,6 +356,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     interestRatePeriod: settings.interestRatePeriod,
     // purpose,
     status: initialStatus,
+    loanId: loanId, // Explicitly set the generated loanId
   });
 
   if (initialStatus === 'pending') {

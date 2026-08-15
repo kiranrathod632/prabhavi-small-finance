@@ -63,6 +63,21 @@ const profileSchema = new mongoose.Schema(
       relationship: { type: String, trim: true },
       phone: { type: String, trim: true },
     },
+    aadhaarDocument: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    panDocument: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bankDocument: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     profileCompleted: {
       type: Boolean,
       default: false,
@@ -85,12 +100,9 @@ profileSchema.pre('save', function () {
     this.phone,
     this.pan,
     this.aadhaar,
-    this.dateOfBirth,
-    this.address?.city,
-    this.address?.state,
-    this.address?.pincode,
-    this.bankDetails?.accountNumber,
-    this.bankDetails?.ifscCode,
+    this.aadhaarDocument,
+    this.panDocument,
+    this.bankDocument,
   ];
 
   this.profileCompleted = requiredFields.every(

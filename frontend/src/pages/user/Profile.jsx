@@ -5,24 +5,26 @@ import toast from 'react-hot-toast';
 import {
   HiCamera,
   HiOutlineUser,
-  HiOutlineOfficeBuilding,
   HiOutlineLockClosed,
   HiOutlinePhone,
   HiOutlineLocationMarker,
+  HiOutlineIdentification,
+  HiCheckCircle,
 } from 'react-icons/hi';
 import { profileAPI, authAPI } from '../../services';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage, resolveMediaUrl } from '../../utils/helpers';
 import LoadingSpinner, { PageLoader } from '../../components/LoadingSpinner';
-import LanguageSelector from '../../components/LanguageSelector';
 import PageHeader from '../../components/PageHeader';
 
 const Profile = () => {
-  const { user, fetchUser, updateLanguage } = useAuth();
+  const { user, fetchUser } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState('');
   const [activeTab, setActiveTab] = useState('personal');
+  const [profile, setProfile] = useState(null);
   const { register, handleSubmit, reset } = useForm();
   const passwordForm = useForm();
 
@@ -30,22 +32,33 @@ const Profile = () => {
     .filter(Boolean)
     .join(' ') || user?.name;
 
-  const handleLanguageChange = async (lang) => {
-    await updateLanguage(lang);
-    toast.success(t('languageUpdated'));
+  const kycCompleted = !!(user?.kycCompleted || (
+    profile?.aadhaarDocument && profile?.panDocument && profile?.bankDocument
+  ));
+
+  const flattenProfileForForm = (profileUser, p) => ({
+    firstName: profileUser?.firstName || '',
+    middleName: profileUser?.middleName || '',
+    lastName: profileUser?.lastName || '',
+    phone: p?.phone || '',
+    address: p?.address?.street || (typeof p?.address === 'string' ? p.address : '') || '',
+    city: p?.address?.city || p?.city || '',
+    state: p?.address?.state || p?.state || '',
+    pan: p?.pan || '',
+    aadhaar: p?.aadhaar || '',
+  });
+
+  const loadProfile = async () => {
+    const res = await profileAPI.get();
+    const { user: profileUser, profile: p } = res.data.data;
+    setProfile(p || null);
+    reset(flattenProfileForForm(profileUser, p));
   };
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await profileAPI.get();
-        const { user: profileUser, profile } = res.data.data;
-        reset({
-          ...(profile || {}),
-          firstName: profileUser?.firstName || '',
-          middleName: profileUser?.middleName || '',
-          lastName: profileUser?.lastName || '',
-        });
+        await loadProfile();
       } catch {
         toast.error(t('error'));
       } finally {
@@ -58,14 +71,21 @@ const Profile = () => {
   const onSaveProfile = async (data) => {
     setSaving(true);
     try {
-      await profileAPI.update({
+      const payload = {
         ...data,
         firstName: data.firstName,
         middleName: data.middleName,
         lastName: data.lastName,
-      });
+      };
+      // Avoid failing validators with empty identity fields on other tabs
+      if (!payload.pan) delete payload.pan;
+      if (!payload.aadhaar) delete payload.aadhaar;
+      if (payload.pan) payload.pan = String(payload.pan).toUpperCase();
+
+      await profileAPI.update(payload);
       toast.success(t('profileUpdated'));
-      fetchUser();
+      await fetchUser();
+      await loadProfile();
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -102,25 +122,79 @@ const Profile = () => {
     }
   };
 
+  const handleDocUpload = async (type, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('type', type);
+    setUploading(type);
+    try {
+      const res = await profileAPI.uploadDocument(formData);
+      const updated = res.data.data;
+      setProfile(updated);
+      await fetchUser();
+      if (updated?.kycCompleted) {
+        toast.success(t('kyc.completed'));
+      } else {
+        toast.success(t('kyc.docUploaded'));
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setUploading('');
+      e.target.value = '';
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   const tabs = [
     { id: 'personal', label: t('personalInfo'), icon: HiOutlineUser },
-    { id: 'bank', label: t('bankDetails'), icon: HiOutlineOfficeBuilding },
+    { id: 'kyc', label: t('kyc.title'), icon: HiOutlineIdentification },
     { id: 'password', label: t('changePassword'), icon: HiOutlineLockClosed },
   ];
+
+  const DocUploadRow = ({ type, label, url }) => (
+    <div className="rounded-xl border border-primary-200/60 dark:border-primary-700/60 p-3 sm:p-4 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{label}</p>
+        {url ? (
+          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+            <HiCheckCircle className="w-4 h-4" /> {t('kyc.uploaded')}
+          </span>
+        ) : (
+          <span className="text-xs text-amber-600 font-medium">{t('kyc.required')}</span>
+        )}
+      </div>
+      {url && (
+        <a
+          href={resolveMediaUrl(url)}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs link-accent break-all"
+        >
+          {t('kyc.viewDoc')}
+        </a>
+      )}
+      <label className="btn-secondary inline-flex cursor-pointer text-sm">
+        {uploading === type ? t('loading') : (url ? t('kyc.replaceDoc') : t('kyc.uploadDoc'))}
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          className="hidden"
+          disabled={!!uploading}
+          onChange={(e) => handleDocUpload(type, e)}
+        />
+      </label>
+    </div>
+  );
 
   return (
     <div className="page-stack max-w-5xl mx-auto">
       <PageHeader
         title={t('profile')}
         subtitle={t('tagline')}
-        actions={
-          <div className="w-full sm:w-auto">
-            {/* <p className="text-[10px] sm:text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('selectLanguage')}</p>
-            <LanguageSelector className="w-full sm:w-40 text-xs sm:text-sm" onChange={handleLanguageChange} /> */}
-          </div>
-        }
       />
 
       <div className="profile-hero">
@@ -145,7 +219,9 @@ const Profile = () => {
             <h2 className="text-lg sm:text-3xl font-bold truncate" style={{ color: 'var(--text-primary)' }}>{displayName}</h2>
             <p className="text-[12px] sm:text-base mt-0.5 sm:mt-1 truncate" style={{ color: 'var(--text-muted)' }}>{user?.mobile_number || user?.email}</p>
             <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-3">
-
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${kycCompleted ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                {kycCompleted ? t('kyc.completedBadge') : t('kyc.pendingBadge')}
+              </span>
             </div>
           </div>
         </div>
@@ -180,18 +256,18 @@ const Profile = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <label className="label">{t('firstName')}</label>
-                <input className="input" defaultValue={user?.firstName} {...register('firstName')} />
+                <input className="input" {...register('firstName')} />
               </div>
               <div>
                 <label className="label">
                   {t('middleName')}
                   <span className="optional-badge">{t('optional')}</span>
                 </label>
-                <input className="input" defaultValue={user?.middleName} {...register('middleName')} />
+                <input className="input" {...register('middleName')} />
               </div>
               <div>
                 <label className="label">{t('lastName')}</label>
-                <input className="input" defaultValue={user?.lastName} {...register('lastName')} />
+                <input className="input" {...register('lastName')} />
               </div>
             </div>
           </section>
@@ -232,38 +308,42 @@ const Profile = () => {
         </form>
       )}
 
-      {activeTab === 'bank' && (
-        <form onSubmit={handleSubmit(onSaveProfile)} className="card space-y-3.5 sm:space-y-5">
+      {activeTab === 'kyc' && (
+        <div className="card space-y-3.5 sm:space-y-5">
           <section className="form-section !p-3 sm:!p-4">
             <div className="form-section-title mb-1">
               <span className="form-section-icon">
-                <HiOutlineOfficeBuilding className="h-3 w-3 sm:h-4 sm:w-4" />
+                <HiOutlineIdentification className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
-              {t('bankDetails')}
+              {t('kyc.title')}
             </div>
-            <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+              {t('kyc.hint')}
+            </p>
+
+            <form onSubmit={handleSubmit(onSaveProfile)} className="grid sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
               <div>
-                <label className="label">{t('ui.bankName')}</label>
-                <input className="input" {...register('bankName')} />
+                <label className="label">{t('ui.pan')} *</label>
+                <input className="input uppercase" maxLength={10} {...register('pan', { required: true })} />
               </div>
               <div>
-                <label className="label">{t('ui.accountNumber')}</label>
-                <input className="input" {...register('accountNumber')} />
+                <label className="label">{t('ui.aadhaar')} *</label>
+                <input className="input" maxLength={12} {...register('aadhaar', { required: true })} />
               </div>
-              <div>
-                <label className="label">{t('ui.ifsc')}</label>
-                <input className="input" {...register('ifscCode')} />
+              <div className="sm:col-span-2">
+                <button type="submit" disabled={saving} className="btn-primary min-w-[120px]">
+                  {saving ? <LoadingSpinner size="sm" /> : t('save')}
+                </button>
               </div>
-              <div>
-                <label className="label">{t('ui.accountHolder')}</label>
-                <input className="input" {...register('accountHolderName')} />
-              </div>
+            </form>
+
+            <div className="grid sm:grid-cols-3 gap-3">
+              <DocUploadRow type="aadhaar" label={t('kyc.aadhaarCard')} url={profile?.aadhaarDocument} />
+              <DocUploadRow type="pan" label={t('kyc.panCard')} url={profile?.panDocument} />
+              <DocUploadRow type="bank" label={t('kyc.bankPhoto')} url={profile?.bankDocument} />
             </div>
           </section>
-          <button type="submit" disabled={saving} className="btn-primary min-w-[120px] sm:min-w-[140px]">
-            {saving ? <LoadingSpinner size="sm" /> : t('save')}
-          </button>
-        </form>
+        </div>
       )}
 
       {activeTab === 'password' && (

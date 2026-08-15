@@ -699,5 +699,24 @@
     "otpVerified": "OTP verified",
     "validOtp": "Enter a valid 6-digit OTP",
     "createStep": "Step {{step}} of 3"
+  },
+  "kyc": {
+    "title": "KYC Documents",
+    "hint": "Upload Aadhaar card, PAN card, and bank photo to complete KYC. Loan apply unlocks only after KYC is complete.",
+    "aadhaarCard": "Aadhaar Card Photo",
+    "panCard": "PAN Card Photo",
+    "bankPhoto": "Bank Passbook / Cheque Photo",
+    "uploadDoc": "Upload",
+    "replaceDoc": "Replace",
+    "viewDoc": "View uploaded file",
+    "uploaded": "Uploaded",
+    "required": "Required",
+    "docUploaded": "Document uploaded",
+    "completed": "KYC completed! You can now apply for a loan.",
+    "completedBadge": "KYC Complete",
+    "pendingBadge": "KYC Pending",
+    "completeKycFirst": "Please upload Aadhaar, PAN, and bank photo in Profile → KYC before applying for a loan",
+    "completeProfileFirst": "Please complete your profile before applying for a loan",
+    "loanBlockedHint": "Complete KYC (Aadhaar, PAN, bank photo) to apply for a loan."
   }
 }

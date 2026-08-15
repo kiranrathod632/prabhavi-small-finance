@@ -29,7 +29,13 @@ const buildEmiFilter = async (user, query = {}) => {
   if (user.role !== ROLES.SUPER_ADMIN) {
     const scope = getAdminScopeFilter(user);
     const scopedLoans = await Loan.find({ ...scope, isDeleted: { $ne: true } }).select('_id');
-    filter.loan = { $in: scopedLoans.map((l) => l._id) };
+    // Also get loans where this admin is the adminId
+    const adminLoans = await Loan.find({ 
+      adminId: user._id, 
+      isDeleted: { $ne: true } 
+    }).select('_id');
+    const allLoanIds = [...scopedLoans.map((l) => l._id), ...adminLoans.map((l) => l._id)];
+    filter.loan = { $in: allLoanIds };
   }
 
   return filter;
@@ -98,6 +104,7 @@ export const payEMI = asyncHandler(async (req, res) => {
 
     emi.status = 'pending_collection';
     emi.paymentMethod = paymentMethod;
+    emi.requestedAt = new Date();
     await emi.save();
 
     await createNotification({
@@ -110,9 +117,22 @@ export const payEMI = asyncHandler(async (req, res) => {
     });
 
     const recipientIds = new Set();
-    if (loan?.adminId) recipientIds.add(loan.adminId.toString());
-    if (user?.adminId) recipientIds.add(user.adminId.toString());
+    
+    // Get the admin who manages this user/loan
+    if (loan?.adminId) {
+      recipientIds.add(loan.adminId.toString());
+    }
+    if (user?.adminId) {
+      recipientIds.add(user.adminId.toString());
+    }
 
+    // Also get the admin from the loan's adminId if not already added
+    const loanAdmin = await Loan.findById(emi.loan._id || emi.loan).select('adminId');
+    if (loanAdmin?.adminId) {
+      recipientIds.add(loanAdmin.adminId.toString());
+    }
+
+    // Add super admins
     const superAdmins = await User.find({
       role: ROLES.SUPER_ADMIN,
       isActive: true,
@@ -125,10 +145,11 @@ export const payEMI = asyncHandler(async (req, res) => {
         _id: { $in: [...recipientIds] },
         isActive: true,
         isDeleted: { $ne: true },
-      }).select('_id mobile_number mobile role');
+      }).select('_id mobile_number mobile role name');
 
       const accountLabel = user?.mobile_number || user?.mobile || user?.email || 'N/A';
       for (const staff of staffRecipients) {
+        // Create notification for each admin
         await createNotification({
           user: staff._id,
           title: 'EMI Payment Request',
@@ -141,6 +162,7 @@ export const payEMI = asyncHandler(async (req, res) => {
             loanId: loan?.loanId || '',
             userId: user?._id?.toString?.() || '',
             amount: String(totalAmount),
+            adminId: staff._id.toString(),
           },
         });
 
@@ -173,11 +195,7 @@ export const payEMI = asyncHandler(async (req, res) => {
     });
   }
 
-  // if (paymentMethod === 'wallet' && user.walletBalance < totalAmount) {
-  //   return sendError(res, 400, 'Insufficient wallet balance');
-  // }
-
-  // Deduct from wallet
+  // Staff/admin payment flow (direct payment without request)
   const balanceBefore = user.walletBalance;
   if (paymentMethod === 'wallet') {
     user.walletBalance -= totalAmount;
@@ -328,8 +346,29 @@ export const adminCollectEMI = asyncHandler(async (req, res) => {
   if (!emi) return sendError(res, 404, 'EMI not found');
 
   const loan = emi.loan;
-  if (loan?.adminId && !canAccessAdminScope(req.user, loan.adminId) && req.user.role !== ROLES.SUPER_ADMIN) {
-    return sendError(res, 403, 'Not authorized');
+  
+  // Check if admin has access to this loan/user
+  // Admin can collect if:
+  // 1. They are super admin, OR
+  // 2. They are the admin of this loan, OR
+  // 3. They have scope access to this loan, OR
+  // 4. They are the admin of the user
+  let hasAccess = req.user.role === ROLES.SUPER_ADMIN;
+  
+  if (!hasAccess && loan?.adminId) {
+    hasAccess = canAccessAdminScope(req.user, loan.adminId) || 
+                loan.adminId.toString() === req.user._id.toString();
+  }
+  
+  if (!hasAccess) {
+    const user = await User.findById(emi.user);
+    if (user?.adminId && user.adminId.toString() === req.user._id.toString()) {
+      hasAccess = true;
+    }
+  }
+  
+  if (!hasAccess) {
+    return sendError(res, 403, 'Not authorized to collect this EMI');
   }
 
   if (emi.status === 'paid') return sendError(res, 400, 'EMI already paid');
@@ -422,7 +461,23 @@ export const adminPartialPayEMI = asyncHandler(async (req, res) => {
   if (!emi) return sendError(res, 404, 'EMI not found');
 
   const loan = emi.loan;
-  if (loan?.adminId && !canAccessAdminScope(req.user, loan.adminId) && req.user.role !== ROLES.SUPER_ADMIN) {
+  
+  // Check if admin has access to this loan/user
+  let hasAccess = req.user.role === ROLES.SUPER_ADMIN;
+  
+  if (!hasAccess && loan?.adminId) {
+    hasAccess = canAccessAdminScope(req.user, loan.adminId) || 
+                loan.adminId.toString() === req.user._id.toString();
+  }
+  
+  if (!hasAccess) {
+    const user = await User.findById(emi.user);
+    if (user?.adminId && user.adminId.toString() === req.user._id.toString()) {
+      hasAccess = true;
+    }
+  }
+  
+  if (!hasAccess) {
     return sendError(res, 403, 'Not authorized');
   }
 
@@ -489,7 +544,24 @@ export const adminAddPenalty = asyncHandler(async (req, res) => {
   const emi = await EMI.findById(req.params.id).populate('loan');
   if (!emi) return sendError(res, 404, 'EMI not found');
 
-  if (emi.loan?.adminId && !canAccessAdminScope(req.user, emi.loan.adminId) && req.user.role !== ROLES.SUPER_ADMIN) {
+  const loan = emi.loan;
+  
+  // Check if admin has access to this loan/user
+  let hasAccess = req.user.role === ROLES.SUPER_ADMIN;
+  
+  if (!hasAccess && loan?.adminId) {
+    hasAccess = canAccessAdminScope(req.user, loan.adminId) || 
+                loan.adminId.toString() === req.user._id.toString();
+  }
+  
+  if (!hasAccess) {
+    const user = await User.findById(emi.user);
+    if (user?.adminId && user.adminId.toString() === req.user._id.toString()) {
+      hasAccess = true;
+    }
+  }
+  
+  if (!hasAccess) {
     return sendError(res, 403, 'Not authorized');
   }
 
@@ -509,4 +581,58 @@ export const adminAddPenalty = asyncHandler(async (req, res) => {
   });
 
   sendResponse(res, 200, 'Penalty updated', emi);
+});
+
+
+// New function to get pending collections for admin dashboard
+export const getPendingCollections = asyncHandler(async (req, res) => {
+  const { page, limit, skip } = paginate(req.query.page, req.query.limit);
+  
+  const filter = { 
+    status: 'pending_collection', 
+    isDeleted: { $ne: true } 
+  };
+  
+  // For staff users (admins), filter by their scope
+  if (isStaffRole(req.user.role)) {
+    if (req.user.role !== ROLES.SUPER_ADMIN) {
+      // Get all loans where this admin is the admin
+      const adminLoans = await Loan.find({ 
+        adminId: req.user._id, 
+        isDeleted: { $ne: true } 
+      }).select('_id');
+      
+      const loanIds = adminLoans.map(l => l._id);
+      
+      // Also get loans where admin has scope access
+      const scope = getAdminScopeFilter(req.user);
+      const scopedLoans = await Loan.find({ ...scope, isDeleted: { $ne: true } }).select('_id');
+      const scopedLoanIds = scopedLoans.map(l => l._id);
+      
+      const allLoanIds = [...loanIds, ...scopedLoanIds];
+      
+      if (allLoanIds.length > 0) {
+        filter.loan = { $in: allLoanIds };
+      } else {
+        // If no loans found, return empty
+        return sendResponse(res, 200, 'No pending collections', [], { total: 0, page, limit });
+      }
+    }
+    // Super admin sees all pending collections
+  } else {
+    // Regular users shouldn't access this endpoint
+    return sendError(res, 403, 'Not authorized');
+  }
+
+  const [emis, total] = await Promise.all([
+    EMI.find(filter)
+      .populate('loan', 'loanId loanType amount adminId')
+      .populate('user', 'name email mobile')
+      .sort({ requestedAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    EMI.countDocuments(filter),
+  ]);
+
+  sendResponse(res, 200, 'Pending collections fetched', emis, paginationMeta(total, page, limit));
 });
