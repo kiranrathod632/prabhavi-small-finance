@@ -49,9 +49,24 @@ const emiSchema = new mongoose.Schema(
     referenceNumber: String,
     penaltyAppliedAt: Date,
     reminderSmsSentAt: Date,
-    // Voice reminder slots (2 days before due): 11 AM / 6 PM IST
+    // SMS slots: once at 11 AM on 2 days before and 1 day before due
+    reminderSmsSlots: {
+      sms2: Date,
+      sms1: Date,
+    },
+    // Legacy single-day voice flags (kept for backward compatibility)
     reminderCallMorningSentAt: Date,
     reminderCallEveningSentAt: Date,
+    // Voice slots: morning/evening for 3, 2, and 1 day(s) before due
+    // Keys: morning3, evening3, morning2, evening2, morning1, evening1
+    reminderCallSlots: {
+      morning3: Date,
+      evening3: Date,
+      morning2: Date,
+      evening2: Date,
+      morning1: Date,
+      evening1: Date,
+    },
     remarks: String,
   },
   { timestamps: true }

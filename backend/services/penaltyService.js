@@ -82,141 +82,215 @@ export const applyOverduePenalties = async () => {
 };
 
 /**
- * Send upcoming EMI reminders
- * Rule: if EMI due date is on 5th → SMS goes on 3rd at 10:00 AM (2 days before)
+ * Send upcoming EMI SMS reminders via Twilio.
+ * Example due 28th → SMS on 26th and 27th at 11:00 AM IST (once each day).
+ * No SMS on day-3 (25th). Does not change API routes/responses.
  */
-export const sendUpcomingReminders = async () => {
-  const today = new Date();
-  // Target due date = today + 2 days (e.g. run on 3rd → remind for EMI due on 5th)
-  const targetDue = new Date(today);
-  targetDue.setDate(targetDue.getDate() + 2);
-  targetDue.setHours(0, 0, 0, 0);
-
-  const targetDueEnd = new Date(targetDue);
-  targetDueEnd.setHours(23, 59, 59, 999);
-
-  const upcomingEmis = await EMI.find({
-    status: { $in: ['pending', 'partial'] },
-    dueDate: { $gte: targetDue, $lte: targetDueEnd },
-    reminderSmsSentAt: null,
-    isDeleted: { $ne: true },
-  })
-    .populate('loan', 'loanId')
-    .populate('user', 'name email mobile mobile_number');
+export const sendUpcomingReminders = async (daysBeforeList = [2, 1]) => {
+  const days = (Array.isArray(daysBeforeList) ? daysBeforeList : [daysBeforeList])
+    .map((d) => Number(d))
+    .filter((d) => d === 1 || d === 2);
 
   let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+  const dueDates = [];
 
-  for (const emi of upcomingEmis) {
-    const dueLabel = new Date(emi.dueDate).toLocaleDateString('en-IN');
+  for (const daysBefore of days) {
+    const today = new Date();
+    const targetDue = new Date(today);
+    targetDue.setDate(targetDue.getDate() + daysBefore);
+    targetDue.setHours(0, 0, 0, 0);
 
-    await createNotification({
-      user: emi.user._id,
-      title: 'Upcoming EMI',
-      message: `EMI #${emi.emiNumber} of ₹${emi.amount} is due on ${dueLabel}`,
-      type: 'emi',
-      link: '/emis',
-    });
+    const targetDueEnd = new Date(targetDue);
+    targetDueEnd.setHours(23, 59, 59, 999);
+    dueDates.push(targetDue.toISOString().slice(0, 10));
 
-    if (emi.user?.email) {
-      await sendEMIReminderEmail(emi.user, emi, emi.loan);
-    }
+    const slotKey = `sms${daysBefore}`;
+    const path = `reminderSmsSlots.${slotKey}`;
 
-    const userMobile = emi.user?.mobile_number || emi.user?.mobile;
-    if (userMobile) {
+    const upcomingEmis = await EMI.find({
+      status: { $in: ['pending', 'partial'] },
+      dueDate: { $gte: targetDue, $lte: targetDueEnd },
+      [path]: null,
+      isDeleted: { $ne: true },
+    })
+      .populate('loan', 'loanId')
+      .populate('user', 'name email mobile mobile_number');
+
+    for (const emi of upcomingEmis) {
+      // Day-2: respect legacy reminderSmsSentAt so older runs are not duplicated
+      if (daysBefore === 2 && emi.reminderSmsSentAt) {
+        if (!emi.reminderSmsSlots) emi.reminderSmsSlots = {};
+        emi.reminderSmsSlots[slotKey] = emi.reminderSmsSentAt;
+        await emi.save({ validateBeforeSave: false });
+        skipped += 1;
+        continue;
+      }
+
+      const dueLabel = new Date(emi.dueDate).toLocaleDateString('en-IN');
+
+      await createNotification({
+        user: emi.user._id,
+        title: 'Upcoming EMI',
+        message: `EMI #${emi.emiNumber} of ₹${emi.amount} is due on ${dueLabel}`,
+        type: 'emi',
+        link: '/emis',
+      });
+
+      if (emi.user?.email) {
+        await sendEMIReminderEmail(emi.user, emi, emi.loan);
+      }
+
+      const userMobile = emi.user?.mobile_number || emi.user?.mobile;
+      if (!userMobile) {
+        skipped += 1;
+        continue;
+      }
+
       const smsResult = await sendEmiReminderSms(
         userMobile,
         emi.emiNumber,
         emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount,
         emi.dueDate
       );
+
       if (smsResult?.success) {
-        emi.reminderSmsSentAt = new Date();
+        if (!emi.reminderSmsSlots) emi.reminderSmsSlots = {};
+        emi.reminderSmsSlots[slotKey] = new Date();
+        // Keep legacy field for tools that still read it
+        emi.reminderSmsSentAt = emi.reminderSmsSlots[slotKey];
         await emi.save({ validateBeforeSave: false });
         sent += 1;
+        console.log(
+          `[EMI Reminder] ✅ SMS D-${daysBefore} → ${userMobile} | ${emi.emiNumber}`
+        );
       } else {
+        failed += 1;
         console.error(
-          `[EMI Reminder] SMS failed for EMI ${emi.emiNumber}:`,
+          `[EMI Reminder] ❌ SMS D-${daysBefore} failed for EMI ${emi.emiNumber}:`,
           smsResult?.error || 'unknown error'
         );
       }
     }
   }
 
-  console.log(`[EMI Reminder] Checked due=${targetDue.toDateString()} | SMS sent=${sent}`);
-  return { sent, dueDate: targetDue.toISOString().slice(0, 10) };
+  console.log(
+    `[EMI Reminder] days=${days.join(',')} | SMS sent=${sent} | failed=${failed} | skipped=${skipped}`
+  );
+  return { sent, failed, skipped, daysBefore: days, dueDates };
+};
+
+const CALL_DAYS_BEFORE = [3, 2, 1];
+
+const slotKeyFor = (slot, daysBefore) => {
+  const isEvening = String(slot).toLowerCase() === 'evening';
+  return `${isEvening ? 'evening' : 'morning'}${daysBefore}`;
 };
 
 /**
- * Place Twilio voice calls for EMIs due in 2 days.
- * slot: 'morning' (11 AM) | 'evening' (6 PM)
+ * Place voice calls for EMIs due in 3 / 2 / 1 day(s).
+ * Example due 25th:
+ *   22nd, 23rd, 24th → morning 10 AM + evening 6 PM
+ * slot: 'morning' | 'evening'
+ * daysBeforeList: default [3, 2, 1]
  * Does not change SMS reminders or API responses.
  */
-export const sendUpcomingReminderCalls = async (slot = 'morning') => {
+export const sendUpcomingReminderCalls = async (
+  slot = 'morning',
+  daysBeforeList = CALL_DAYS_BEFORE
+) => {
   const isEvening = String(slot).toLowerCase() === 'evening';
-  const sentField = isEvening ? 'reminderCallEveningSentAt' : 'reminderCallMorningSentAt';
-  const slotLabel = isEvening ? 'evening-6PM' : 'morning-11AM';
-
-  const today = new Date();
-  const targetDue = new Date(today);
-  targetDue.setDate(targetDue.getDate() + 2);
-  targetDue.setHours(0, 0, 0, 0);
-
-  const targetDueEnd = new Date(targetDue);
-  targetDueEnd.setHours(23, 59, 59, 999);
-
-  const upcomingEmis = await EMI.find({
-    status: { $in: ['pending', 'partial'] },
-    dueDate: { $gte: targetDue, $lte: targetDueEnd },
-    [sentField]: null,
-    isDeleted: { $ne: true },
-  })
-    .populate('loan', 'loanId')
-    .populate('user', 'name email mobile mobile_number');
+  const legacyField = isEvening ? 'reminderCallEveningSentAt' : 'reminderCallMorningSentAt';
+  const slotLabel = isEvening ? 'evening-6PM' : 'morning-10AM';
+  const days = (Array.isArray(daysBeforeList) ? daysBeforeList : [daysBeforeList])
+    .map((d) => Number(d))
+    .filter((d) => d === 1 || d === 2 || d === 3);
 
   let called = 0;
   let failed = 0;
   let skipped = 0;
+  const dueDates = [];
 
-  for (const emi of upcomingEmis) {
-    const userMobile = emi.user?.mobile_number || emi.user?.mobile;
-    if (!userMobile) {
-      skipped += 1;
-      continue;
-    }
+  for (const daysBefore of days) {
+    const today = new Date();
+    const targetDue = new Date(today);
+    targetDue.setDate(targetDue.getDate() + daysBefore);
+    targetDue.setHours(0, 0, 0, 0);
 
-    const payAmount = emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount;
-    const callResult = await sendEmiReminderCall(
-      userMobile,
-      emi.emiNumber,
-      payAmount,
-      emi.dueDate
-    );
+    const targetDueEnd = new Date(targetDue);
+    targetDueEnd.setHours(23, 59, 59, 999);
+    dueDates.push(targetDue.toISOString().slice(0, 10));
 
-    if (callResult?.success) {
-      emi[sentField] = new Date();
-      await emi.save({ validateBeforeSave: false });
-      called += 1;
-      console.log(
-        `[EMI Call Reminder] ✅ ${slotLabel} → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(payAmount || 0)}`
+    const key = slotKeyFor(slot, daysBefore);
+    const path = `reminderCallSlots.${key}`;
+
+    const upcomingEmis = await EMI.find({
+      status: { $in: ['pending', 'partial'] },
+      dueDate: { $gte: targetDue, $lte: targetDueEnd },
+      [path]: null,
+      isDeleted: { $ne: true },
+    })
+      .populate('loan', 'loanId')
+      .populate('user', 'name email mobile mobile_number');
+
+    for (const emi of upcomingEmis) {
+      // Skip day-2 if legacy single-slot flag already set (older cron)
+      if (daysBefore === 2 && emi[legacyField]) {
+        if (!emi.reminderCallSlots) emi.reminderCallSlots = {};
+        emi.reminderCallSlots[key] = emi[legacyField];
+        await emi.save({ validateBeforeSave: false });
+        skipped += 1;
+        continue;
+      }
+
+      const userMobile = emi.user?.mobile_number || emi.user?.mobile;
+      if (!userMobile) {
+        skipped += 1;
+        continue;
+      }
+
+      const payAmount = emi.pendingAmount > 0 ? emi.pendingAmount : emi.amount;
+      const callResult = await sendEmiReminderCall(
+        userMobile,
+        emi.emiNumber,
+        payAmount,
+        emi.dueDate,
+        emi.user?.name
       );
-    } else {
-      failed += 1;
-      console.error(
-        `[EMI Call Reminder] ❌ ${slotLabel} → ${userMobile} | ${emi.emiNumber}:`,
-        callResult?.error || 'unknown error'
-      );
+
+      if (callResult?.success) {
+        if (!emi.reminderCallSlots) emi.reminderCallSlots = {};
+        emi.reminderCallSlots[key] = new Date();
+        // Keep legacy fields in sync for day-2 (compat with older tools)
+        if (daysBefore === 2) {
+          emi[legacyField] = emi.reminderCallSlots[key];
+        }
+        await emi.save({ validateBeforeSave: false });
+        called += 1;
+        console.log(
+          `[EMI Call Reminder] ✅ ${slotLabel} D-${daysBefore} → ${userMobile} | ${emi.emiNumber} | Rs.${Math.round(payAmount || 0)}`
+        );
+      } else {
+        failed += 1;
+        console.error(
+          `[EMI Call Reminder] ❌ ${slotLabel} D-${daysBefore} → ${userMobile} | ${emi.emiNumber}:`,
+          callResult?.error || 'unknown error'
+        );
+      }
     }
   }
 
   console.log(
-    `[EMI Call Reminder] slot=${slotLabel} due=${targetDue.toDateString()} | called=${called} | failed=${failed} | skipped=${skipped}`
+    `[EMI Call Reminder] slot=${slotLabel} days=${days.join(',')} | called=${called} | failed=${failed} | skipped=${skipped}`
   );
   return {
     slot: slotLabel,
+    daysBefore: days,
     called,
     failed,
     skipped,
-    dueDate: targetDue.toISOString().slice(0, 10),
+    dueDates,
   };
 };
 
@@ -285,16 +359,22 @@ export const sendTestUpcomingReminders = async () => {
       );
     } else {
       failed += 1;
+      const errText =
+        typeof smsResult?.error === 'string'
+          ? smsResult.error
+          : smsResult?.error != null
+            ? JSON.stringify(smsResult.error)
+            : 'unknown';
       // Check if it's a rate limit error
-      if (smsResult?.code === 63038 || smsResult?.error?.includes('daily message limit')) {
+      if (smsResult?.code === 63038 || errText.toLowerCase().includes('daily message limit')) {
         rateLimited += 1;
         console.error(
-          `[EMI Test Reminder] ⚠️ RATE LIMITED → ${userMobile} | ${emi.emiNumber}: ${smsResult?.error}`
+          `[EMI Test Reminder] ⚠️ RATE LIMITED → ${userMobile} | ${emi.emiNumber}: ${errText}`
         );
       } else {
         console.error(
           `[EMI Test Reminder] ❌ SMS FAIL → ${userMobile} | ${emi.emiNumber}:`,
-          smsResult?.error || 'unknown'
+          errText
         );
       }
     }

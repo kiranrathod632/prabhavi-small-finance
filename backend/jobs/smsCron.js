@@ -6,60 +6,61 @@ import {
 } from '../services/penaltyService.js';
 
 /**
- * Register SMS/Voice cron jobs (EMI reminders).
- * Call once after server starts. Does not alter API routes/responses.
+ * Register SMS/Voice cron jobs (EMI reminders) — Twilio.
+ * Does not alter API routes/responses.
  *
- * Production:
- *   - 10:00 AM IST — SMS 2 days before EMI due
- *   - 11:00 AM IST — Twilio voice call (same EMIs)
- *   -  6:00 PM IST — Twilio voice call (same EMIs)
- * Optional: every-5-min test SMS when EMI_REMINDER_TEST_EVERY_5_MIN=true
+ * Example: EMI due on 28th
+ *   - 25th 10:00 AM + 6:00 PM — call
+ *   - 26th 10:00 AM + 6:00 PM — call
+ *   - 26th 11:00 AM           — SMS (once)
+ *   - 27th 10:00 AM + 6:00 PM — call
+ *   - 27th 11:00 AM           — SMS (once)
  */
 export const startSmsCronJobs = () => {
-  // Production: 2 days before EMI due — SMS with amount, date, penalty warning
+  // Morning voice calls — EMIs due in 3 / 2 / 1 day(s)
   cron.schedule(
     '0 10 * * *',
     async () => {
       try {
-        console.log('[Cron] 2-day EMI SMS reminder started');
-        await sendUpcomingReminders();
+        console.log('[Cron] EMI morning call started (10 AM) for D-3/D-2/D-1');
+        await sendUpcomingReminderCalls('morning', [3, 2, 1]);
       } catch (e) {
-        console.error('2-day EMI SMS reminder cron:', e.message);
+        console.error('EMI morning call cron:', e.message);
       }
     },
     { timezone: 'Asia/Kolkata' }
   );
-  console.log('[Cron] 2-day EMI SMS reminder ENABLED — daily 10:00 AM IST');
+  console.log('[Cron] EMI morning CALL ENABLED — daily 10:00 AM IST (due in 3/2/1 days)');
 
-  // Production: Twilio voice calls at 11 AM IST
+  // SMS once per day — 2 days before AND 1 day before due (not day-3)
   cron.schedule(
     '0 11 * * *',
     async () => {
       try {
-        console.log('[Cron] 2-day EMI morning call started (11 AM)');
-        await sendUpcomingReminderCalls('morning');
+        console.log('[Cron] EMI SMS reminder started (11 AM) for D-2/D-1');
+        await sendUpcomingReminders([2, 1]);
       } catch (e) {
-        console.error('2-day EMI morning call cron:', e.message);
+        console.error('EMI SMS reminder cron:', e.message);
       }
     },
     { timezone: 'Asia/Kolkata' }
   );
-  console.log('[Cron] 2-day EMI morning CALL ENABLED — daily 11:00 AM IST');
+  console.log('[Cron] EMI SMS reminder ENABLED — daily 11:00 AM IST (due in 2/1 days)');
 
-  // Production: Twilio voice calls at 6 PM IST
+  // Evening voice calls — EMIs due in 3 / 2 / 1 day(s)
   cron.schedule(
     '0 18 * * *',
     async () => {
       try {
-        console.log('[Cron] 2-day EMI evening call started (6 PM)');
-        await sendUpcomingReminderCalls('evening');
+        console.log('[Cron] EMI evening call started (6 PM) for D-3/D-2/D-1');
+        await sendUpcomingReminderCalls('evening', [3, 2, 1]);
       } catch (e) {
-        console.error('2-day EMI evening call cron:', e.message);
+        console.error('EMI evening call cron:', e.message);
       }
     },
     { timezone: 'Asia/Kolkata' }
   );
-  console.log('[Cron] 2-day EMI evening CALL ENABLED — daily 6:00 PM IST');
+  console.log('[Cron] EMI evening CALL ENABLED — daily 6:00 PM IST (due in 3/2/1 days)');
 
   const enableEvery5Min =
     String(process.env.EMI_REMINDER_TEST_EVERY_5_MIN || '').trim().toLowerCase() === 'true';
@@ -74,7 +75,6 @@ export const startSmsCronJobs = () => {
       }
     };
 
-    // Send once immediately on server start
     runEvery5MinReminder('startup');
 
     cron.schedule(

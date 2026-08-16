@@ -15,6 +15,7 @@ import reportRoutes from './reportRoutes.js';
 import adminRoutes from './adminRoutes.js';
 
 import adminPanelRoutes from './adminPanelRoutes.js';
+import twilioTestRoutes from './twilioTestRoutes.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/auth', authRoutes);
 router.use('/otp', otpRoutes);
 router.use('/users', userRoutes);
 router.use('/profile', profileRoutes);
+router.use('/twilio', twilioTestRoutes);
 router.use('/loans', loanRoutes);
 router.use('/emis', emiRoutes);
 router.use('/transactions', transactionRoutes);
