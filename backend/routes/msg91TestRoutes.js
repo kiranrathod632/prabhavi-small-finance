@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { postTestCall, postTestSms } from '../controllers/twilioTestController.js';
+import { postTestCall, postTestSms } from '../controllers/msg91TestController.js';
 
 const router = Router();
 
-// Test-only — no JWT (does not alter OTP / EMI / auth responses)
+// Test-only — no JWT
 router.post('/test-sms', postTestSms);
 router.post('/test-call', postTestCall);
 

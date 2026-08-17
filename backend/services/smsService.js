@@ -3,6 +3,12 @@
 import twilio from 'twilio';
 import Otp from '../models/Otp.js';
 import Notification from '../models/Notification.js';
+import { sendMsg91Sms, sendMsg91OtpSms } from './msg91Service.js';
+
+const getSmsProvider = () =>
+  String(process.env.SMS_PROVIDER || process.env.OTP_SMS_PROVIDER || 'twilio')
+    .trim()
+    .toLowerCase();
 
 const getTwilioConfig = () => ({
   accountSid: (process.env.TWILIO_ACCOUNT_SID || '').replace(/\s+/g, '').trim(),
@@ -208,7 +214,8 @@ const sendViaTwilio = async ({ mobile, message }) => {
 };
 
 /**
- * Send SMS via Twilio
+ * Send SMS via configured provider (twilio | msg91).
+ * Default Twilio. EMI reminder SMS stays on PIOPIY (sendEmiReminderSms).
  * @param {{ to: string, message: string }}
  */
 export const sendSms = async ({ to, message }) => {
@@ -216,6 +223,11 @@ export const sendSms = async ({ to, message }) => {
     const mobile = String(to || '').replace(/\D/g, '').slice(-10);
     if (!/^[6-9]\d{9}$/.test(mobile)) {
       return { success: false, error: 'Invalid phone number' };
+    }
+
+    const provider = getSmsProvider();
+    if (provider === 'msg91') {
+      return sendMsg91Sms({ to: mobile, message });
     }
 
     try {
@@ -257,6 +269,40 @@ export const manualTestSms = async (mobile, emiNumber, amount, dueDate) => {
   const result = await sendEmiReminderSms(mobile, emiNumber, amount, dueDate);
   console.log(`[MANUAL TEST] Result:`, result);
   return result;
+};
+
+/**
+ * Twilio SMS test — does not change OTP / EMI cron / API responses.
+ * purpose: 'custom' | 'otp' | 'emi' (default custom)
+ */
+export const testTwilioSms = async (mobile, options = {}) => {
+  const digits = String(mobile || '').replace(/\D/g, '').slice(-10);
+  if (!/^[6-9]\d{9}$/.test(digits)) {
+    return { success: false, error: 'Invalid Indian mobile number', provider: 'twilio' };
+  }
+
+  const purpose = String(options.purpose || 'custom').toLowerCase();
+
+  if (purpose === 'otp') {
+    const otp = options.otp || generateOtp();
+    const result = await sendOtpSms(digits, otp, options.otpPurpose || 'verification');
+    return { ...result, otp: process.env.NODE_ENV !== 'production' ? otp : undefined, purpose: 'otp' };
+  }
+
+  if (purpose === 'emi') {
+    return sendEmiReminderSms(
+      digits,
+      options.emiNumber || 'EMI-TEST',
+      options.amount != null ? options.amount : 250,
+      options.dueDate || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
+    );
+  }
+
+  const message =
+    options.message ||
+    'Prabhavi Small Finance Twilio SMS test. If you received this, SMS is working.';
+  const result = await sendSms({ to: digits, message });
+  return { ...result, purpose: 'custom' };
 };
 
 /**
@@ -318,9 +364,13 @@ export const sendBulkSms = async ({ recipients, message }) => {
 };
 
 /**
- * Send OTP SMS
+ * Send OTP SMS (Twilio or MSG91 via SMS_PROVIDER — same caller responses).
  */
 export const sendOtpSms = async (mobile, otp, purpose = 'registration') => {
+  if (getSmsProvider() === 'msg91') {
+    return sendMsg91OtpSms(mobile, otp, purpose);
+  }
+
   const messages = {
     registration: `Your FinanceLoan registration OTP is ${otp}. Valid for 10 minutes. Do not share with anyone.`,
     login: `Your FinanceLoan login OTP is ${otp}. Valid for 10 minutes.`,
@@ -370,7 +420,7 @@ export const sendLoanApplicationAdminSms = async ({ adminMobile, user, loan }) =
 };
 
 /**
- * Send EMI Reminder SMS (Marathi + amount + due date)
+ * Send EMI Reminder SMS via PIOPIY/TeleCMI (OTP / other SMS stay on Twilio).
  * Example: नमस्कार! आपली EMI दिनांक २/८/२०२६ (२ तारीख) रोजी रु.८५८ आहे. वेळेवर भरा, नाहीतर दंड लागेल.
  */
 export const sendEmiReminderSms = async (mobile, emiNumber, amount, dueDate) => {
@@ -392,7 +442,7 @@ export const sendEmiReminderSms = async (mobile, emiNumber, amount, dueDate) => 
     `${dayMr ? ` (${dayMr} / ${dateEn})` : ''}. ` +
     `कृपया वेळेवर भरा, नाहीतर दंड/पेनल्टी लागेल. - प्रभावी स्मॉल फायनान्स`;
 
-  return sendSms({ to: mobile, message });
+  // return sendPiopiySms({ to: mobile, message });
 };
 
 /**

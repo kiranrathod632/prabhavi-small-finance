@@ -9,7 +9,7 @@ export const buildMarathiEmiCallScript = ({ name, amount, dueDate } = {}) => {
       .split(/\s+/)
       .filter(Boolean)[0] || 'ग्राहक';
 
-  const amt = Math.round(Number(amount) || 0);
+  const amt = Math.round(Number(amount) || 0); 
   const parsed = new Date(dueDate);
   const day = Number.isNaN(parsed.getTime()) ? String(dueDate || '') : String(parsed.getDate());
 

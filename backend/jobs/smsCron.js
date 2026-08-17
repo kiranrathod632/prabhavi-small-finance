@@ -6,8 +6,8 @@ import {
 } from '../services/penaltyService.js';
 
 /**
- * Register SMS/Voice cron jobs (EMI reminders) — Twilio.
- * Does not alter API routes/responses.
+ * Register SMS/Voice cron jobs — EMI SMS: PIOPIY, EMI calls: VOICE_PROVIDER (default MSG91).
+ * OTP/general SMS: SMS_PROVIDER (MSG91/Twilio). Does not alter API routes/responses.
  *
  * Example: EMI due on 28th
  *   - 25th 10:00 AM + 6:00 PM — call
