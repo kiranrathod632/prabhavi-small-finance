@@ -1,12 +1,12 @@
-// services/voiceService.js — EMI reminder calls (MSG91 / PIOPIY / Twilio via VOICE_PROVIDER)
-// Does not alter SMS, OTP, or API routes/responses.
+// services/voiceService.js — EMI reminder calls (Vobiz / Twilio)
+// Piopiy and MSG91 removed
 
 import twilio from 'twilio';
 import { buildMarathiEmiCallScript } from '../utils/emiCallScript.js';
-import { sendMsg91EmiReminderCall, testMsg91Call } from './msg91Service.js';
+import { sendVobizCall } from './vobizService.js';
 
 const getVoiceProvider = () =>
-  String(process.env.VOICE_PROVIDER || process.env.EMI_VOICE_PROVIDER || 'msg91')
+  String(process.env.VOICE_PROVIDER || process.env.EMI_VOICE_PROVIDER || 'vobiz')
     .trim()
     .toLowerCase();
 
@@ -37,70 +37,101 @@ const escapeXml = (text = '') =>
     .replace(/'/g, '&apos;');
 
 /**
- * Production EMI reminder call — default MSG91.
- * If MSG91 voice DID/template not configured, falls back to Twilio (SMS stays MSG91).
+ * Production EMI reminder call — Vobiz or Twilio
  */
 export const sendEmiReminderCall = async (mobile, emiNumber, amount, dueDate, name) => {
   const provider = getVoiceProvider();
-  if (provider === 'piopiy') {
-    return sendPiopiyEmiReminderCall(mobile, emiNumber, amount, dueDate, name);
+  
+  // Vobiz - Primary provider
+  if (provider === 'vobiz') {
+    const vobizResult = await sendVobizCall(mobile, { name, amount, dueDate, emiNumber });
+    
+    // If Vobiz fails, fallback to Twilio
+    if (!vobizResult?.success) {
+      const missingConfig = /VOBIZ_AUTH_ID|VOBIZ_AUTH_TOKEN|VOBIZ_FROM_NUMBER/i.test(
+        String(vobizResult?.error || '')
+      );
+      const allowFallback =
+        String(process.env.VOICE_FALLBACK_TWILIO || 'true').trim().toLowerCase() !== 'false';
+
+      if (missingConfig && allowFallback) {
+        console.warn('[Voice] Vobiz not configured — falling back to Twilio');
+        const twilioResult = await testTwilioCall(mobile, { name, amount, dueDate, emiNumber });
+        return {
+          ...twilioResult,
+          fallbackFrom: 'vobiz',
+          vobizError: vobizResult?.error,
+          note: twilioResult.success
+            ? 'Vobiz config missing — call sent via Twilio fallback.'
+            : twilioResult.note || twilioResult.error,
+        };
+      }
+    }
+    return vobizResult;
   }
+
+  // Twilio - Secondary provider
   if (provider === 'twilio') {
     return testTwilioCall(mobile, { name, amount, dueDate, emiNumber });
   }
 
-  const msg91Result = await sendMsg91EmiReminderCall(mobile, emiNumber, amount, dueDate, name);
-  if (msg91Result?.success) return msg91Result;
+  // Default: Try Vobiz first, then fallback to Twilio
+  const vobizResult = await sendVobizCall(mobile, { name, amount, dueDate, emiNumber });
+  if (vobizResult?.success) return vobizResult;
 
-  const missingDid = /MSG91_CALLER_ID|VOICE_TEMPLATE|DID/i.test(String(msg91Result?.error || ''));
   const allowFallback =
     String(process.env.VOICE_FALLBACK_TWILIO || 'true').trim().toLowerCase() !== 'false';
 
-  if (missingDid && allowFallback) {
-    console.warn('[Voice] MSG91 not configured for calls — falling back to Twilio');
+  if (allowFallback) {
+    console.warn('[Voice] Vobiz failed — falling back to Twilio');
     const twilioResult = await testTwilioCall(mobile, { name, amount, dueDate, emiNumber });
     return {
       ...twilioResult,
-      fallbackFrom: 'msg91',
-      msg91Error: msg91Result?.error,
+      fallbackFrom: 'vobiz',
+      vobizError: vobizResult?.error,
       note: twilioResult.success
-        ? 'MSG91_CALLER_ID missing — call sent via Twilio. Set MSG91 DID to use MSG91 voice.'
+        ? 'Vobiz call failed — sent via Twilio fallback.'
         : twilioResult.note || twilioResult.error,
     };
   }
 
-  return msg91Result;
+  return vobizResult;
 };
 
 /**
- * Voice test — follows VOICE_PROVIDER (same as EMI cron).
- * For MSG91-only testing use POST /api/msg91/test-call.
+ * Voice test — follows VOICE_PROVIDER (same as EMI cron)
  */
 export const testVoiceCall = async (mobile, options = {}) => {
   const provider = getVoiceProvider();
-  if (provider === 'piopiy') return testPiopiyCall(mobile, options);
-  if (provider === 'twilio') return testTwilioCall(mobile, options);
+  
+  if (provider === 'vobiz') {
+    return sendVobizCall(mobile, options);
+  }
+  
+  if (provider === 'twilio') {
+    return testTwilioCall(mobile, options);
+  }
 
-  const msg91Result = await testMsg91Call(mobile, options);
-  if (msg91Result?.success) return msg91Result;
+  // Default: Try Vobiz
+  const vobizResult = await sendVobizCall(mobile, options);
+  if (vobizResult?.success) return vobizResult;
 
-  const missingDid = /MSG91_CALLER_ID|VOICE_TEMPLATE|DID/i.test(String(msg91Result?.error || ''));
   const allowFallback =
     String(process.env.VOICE_FALLBACK_TWILIO || 'true').trim().toLowerCase() !== 'false';
 
-  if (missingDid && allowFallback) {
+  if (allowFallback) {
     const twilioResult = await testTwilioCall(mobile, options);
     return {
       ...twilioResult,
-      fallbackFrom: 'msg91',
-      msg91Error: msg91Result?.error,
+      fallbackFrom: 'vobiz',
+      vobizError: vobizResult?.error,
       note: twilioResult.success
-        ? 'MSG91_CALLER_ID missing — call sent via Twilio fallback.'
+        ? 'Vobiz call failed — sent via Twilio fallback.'
         : twilioResult.error,
     };
   }
 
-  return msg91Result;
+  return vobizResult;
 };
 
 /**
@@ -118,7 +149,7 @@ export const testTwilioCall = async (mobile, options = {}) => {
       options.message ||
       buildMarathiEmiCallScript({
         name: options.name,
-        amount: options.amount != null ? options.amount : 250,
+        amount: options.amount,
         dueDate: options.dueDate || new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       });
 

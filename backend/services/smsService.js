@@ -1,9 +1,7 @@
-// services/smsService.js
-
 import twilio from 'twilio';
 import Otp from '../models/Otp.js';
 import Notification from '../models/Notification.js';
-import { sendMsg91Sms, sendMsg91OtpSms } from './msg91Service.js';
+// import { sendMsg91Sms, sendMsg91OtpSms } from './msg91Service.js';
 
 const getSmsProvider = () =>
   String(process.env.SMS_PROVIDER || process.env.OTP_SMS_PROVIDER || 'twilio')

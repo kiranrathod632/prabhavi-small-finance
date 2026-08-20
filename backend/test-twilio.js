@@ -1,11 +1,4 @@
-/**
- * CLI Twilio smoke test (SMS + Call).
- * Usage:
- *   node test-twilio.js sms 9xxxxxxxxx
- *   node test-twilio.js call 9xxxxxxxxx
- *   node test-twilio.js otp 9xxxxxxxxx
- *   node test-twilio.js emi 9xxxxxxxxx
- */
+
 import dotenv from 'dotenv';
 import { testTwilioSms } from './services/smsService.js';
 import { testTwilioCall } from './services/voiceService.js';

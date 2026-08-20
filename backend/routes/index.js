@@ -16,7 +16,7 @@ import adminRoutes from './adminRoutes.js';
 
 import adminPanelRoutes from './adminPanelRoutes.js';
 import twilioTestRoutes from './twilioTestRoutes.js';
-import msg91TestRoutes from './msg91TestRoutes.js';
+import vobizTestRoutes from './vobizTestRoutes.js';
 
 const router = Router();
 
@@ -25,7 +25,6 @@ router.use('/otp', otpRoutes);
 router.use('/users', userRoutes);
 router.use('/profile', profileRoutes);
 router.use('/twilio', twilioTestRoutes);
-router.use('/msg91', msg91TestRoutes);
 router.use('/loans', loanRoutes);
 router.use('/emis', emiRoutes);
 router.use('/transactions', transactionRoutes);
@@ -37,5 +36,6 @@ router.use('/recovery', recoveryRoutes);
 router.use('/reports', reportRoutes);
 router.use('/admins', adminRoutes);
 router.use('/admin', adminPanelRoutes);
+router.use('/vobiz', vobizTestRoutes);
 
 export default router;
