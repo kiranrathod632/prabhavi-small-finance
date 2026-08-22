@@ -9,7 +9,7 @@ import { PAYMENT_METHODS } from '../../utils/roles';
 import Badge from '../../components/Badge';
 import Modal from '../../components/Modal';
 import { PageLoader } from '../../components/LoadingSpinner';
-import { HiArrowLeft } from 'react-icons/hi';
+import { HiArrowLeft, HiEye, HiEyeOff } from 'react-icons/hi';
 
 /**
  * Admin / Super Admin — full detail of a joined user (loans + EMIs)
@@ -28,6 +28,7 @@ const UserDetail = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [penalty, setPenalty] = useState(0);
+  const [expandedLoans, setExpandedLoans] = useState({});
 
   const loadUserDetail = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -46,12 +47,36 @@ const UserDetail = () => {
     loadUserDetail();
   }, [id, base, navigate]);
 
+  const toggleLoanExpand = (loanId) => {
+    setExpandedLoans(prev => ({
+      ...prev,
+      [loanId]: !prev[loanId],
+    }));
+  };
+
   if (loading) return <PageLoader />;
   if (!data?.user) return null;
 
   const { user, profile, loans = [], emis = [], summary = {} } = data;
   const owningAdmin = user.adminId;
   const totalDue = (emi) => (emi?.amount || 0) + (emi?.penalty || 0) + (emi?.lateFee || 0);
+
+  // Group EMIs by Loan ID (using loan._id as key)
+  const groupedEmis = {};
+  emis.forEach((emi) => {
+    const loanId = emi.loan; // This is the loan's _id
+    
+    if (!groupedEmis[loanId]) {
+      groupedEmis[loanId] = [];
+    }
+    groupedEmis[loanId].push(emi);
+  });
+
+  // Function to get EMIs for a loan
+  const getLoanEmis = (loan) => {
+    const loanId = loan._id;
+    return groupedEmis[loanId] || [];
+  };
 
   const handleCollect = async () => {
     if (!collectEmi) return;
@@ -79,7 +104,8 @@ const UserDetail = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => navigate(`${base}/users`)} className="btn-secondary p-2">
           <HiArrowLeft className="w-5 h-5" />
@@ -90,15 +116,14 @@ const UserDetail = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <div className="card p-3">
           <p className="text-xs text-gray-500">{t('userDetail.totalLoans')}</p>
           <p className="text-xl font-bold">{summary.totalLoans ?? 0}</p>
         </div>
         <div className="card p-3">
-          <p className="text-xs text-gray-500">
-            {t('userDetail.totalEmis', { defaultValue: 'Total EMIs' })}
-          </p>
+          <p className="text-xs text-gray-500">{t('userDetail.totalEmis', { defaultValue: 'Total EMIs' })}</p>
           <p className="text-xl font-bold">{summary.totalEmis ?? 0}</p>
         </div>
         <div className="card p-3">
@@ -127,6 +152,7 @@ const UserDetail = () => {
         </div>
       </div>
 
+      {/* User Info */}
       <div className="card p-4 sm:p-6">
         <h2 className="font-semibold mb-4">{t('userDetail.userInfo')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
@@ -146,90 +172,180 @@ const UserDetail = () => {
         </div>
       </div>
 
-      <div className="card overflow-x-auto">
+      {/* Loans Table with Expandable EMIs */}
+      <div className="card overflow-hidden">
         <div className="p-4 border-b dark:border-gray-700">
           <h2 className="font-semibold">{t('userDetail.loans')} ({loans.length})</h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700 text-left">
-              <th className="p-3">{t('table.loanId')}</th>
-              <th className="p-3">{t('table.amount')}</th>
-              <th className="p-3">{t('table.status')}</th>
-              <th className="p-3">{t('table.created')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loans.map((loan) => (
-              <tr key={loan._id} className="border-b dark:border-gray-700/50">
-                <td className="p-3 font-medium">{loan.loanId || loan._id?.slice(-6)}</td>
-                <td className="p-3">{formatCurrency(loan.amount)}</td>
-                <td className="p-3"><Badge status={loan.status} /></td>
-                <td className="p-3">{formatDate(loan.createdAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!loans.length && <p className="p-4 text-center text-gray-500">{t('userDetail.noLoans')}</p>}
+        
+        {loans.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
+                  <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300">#</th>
+                  <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300">Loan ID</th>
+                  <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300">Amount</th>
+                  <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300">Pending Amt</th>
+                  <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">Total EMI</th>
+                  <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">Pending EMI</th>
+                  <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">Status</th>
+                  <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.map((loan, index) => {
+                  const loanEmis = getLoanEmis(loan);
+                  
+                  const pendingEmis = loanEmis.filter(e => 
+                    e.status === 'pending' || 
+                    e.status === 'overdue' || 
+                    e.status === 'partial' || 
+                    e.status === 'pending_collection'
+                  );
+                  
+                  const totalEmis = loanEmis.length;
+                  const pendingAmount = loanEmis
+                    .filter(e => e.status === 'pending' || e.status === 'overdue' || e.status === 'partial')
+                    .reduce((sum, e) => sum + (e.amount || 0) + (e.penalty || 0), 0);
+
+                  return (
+                    <>
+                      <tr key={loan._id} className="border-b dark:border-gray-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="p-3 text-slate-500">{index + 1}</td>
+                        <td className="p-3 font-medium text-primary-600">{loan.loanId || loan._id?.slice(-6)}</td>
+                        <td className="p-3 text-right">{formatCurrency(loan.amount)}</td>
+                        <td className="p-3 text-right text-amber-600 font-medium">{formatCurrency(pendingAmount)}</td>
+                        <td className="p-3 text-center font-medium text-blue-600">{totalEmis}</td>
+                        <td className="p-3 text-center">
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                            pendingEmis.length > 0 
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' 
+                              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          }`}>
+                            {pendingEmis.length}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center"><Badge status={loan.status} /></td>
+                        <td className="p-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleLoanExpand(loan._id)}
+                            className="inline-flex items-center justify-center p-2 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm transition-colors"
+                            title={expandedLoans[loan._id] ? 'Hide EMIs' : 'View EMIs'}
+                          >
+                            {expandedLoans[loan._id] 
+                              ? <HiEyeOff className="w-4 h-4 text-primary-600" /> 
+                              : <HiEye className="w-4 h-4 text-slate-500" />
+                            }
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* Expanded EMI Details Row */}
+                      {expandedLoans[loan._id] && (
+                        <tr>
+                          <td colSpan="8" className="p-0">
+                            <div className="bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
+                              {loanEmis.length > 0 ? (
+                                <>
+                                  <div className="px-4 py-2 text-xs font-semibold text-slate-500 flex flex-wrap gap-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                    <span>📊 Total EMIs: <span className="text-blue-600">{totalEmis}</span></span>
+                                    <span className={pendingEmis.length > 0 ? 'text-amber-600' : 'text-emerald-600'}>
+                                      ⏳ Pending: {pendingEmis.length}
+                                    </span>
+                                    {pendingAmount > 0 && (
+                                      <span className="text-amber-600">
+                                        💰 Pending Amount: {formatCurrency(pendingAmount)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead className="bg-transparent">
+                                        <tr className="border-b dark:border-gray-700 text-left">
+                                          <th className="pl-4 p-2 text-xs font-medium text-slate-500">EMI #</th>
+                                          <th className="p-2 text-right text-xs font-medium text-slate-500">Amount</th>
+                                          <th className="p-2 text-right text-xs font-medium text-slate-500">Penalty</th>
+                                          <th className="p-2 text-right text-xs font-medium text-slate-500">Late Fee</th>
+                                          <th className="p-2 text-xs font-medium text-slate-500">Due Date</th>
+                                          <th className="p-2 text-xs font-medium text-slate-500">Paid Date</th>
+                                          <th className="p-2 text-center text-xs font-medium text-slate-500">Status</th>
+                                          <th className="p-2 text-right text-xs font-medium text-slate-500">Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {loanEmis.map((emi) => (
+                                          <tr key={emi._id} className="border-b dark:border-gray-700/50 hover:bg-white dark:hover:bg-slate-700/50 transition-colors bg-white dark:bg-slate-800">
+                                            <td className="pl-4 p-2 font-medium">{emi.emiNumber || 'N/A'}</td>
+                                            <td className="p-2 text-right">{formatCurrency(emi.amount)}</td>
+                                            <td className="p-2 text-right text-red-500">{formatCurrency(emi.penalty || 0)}</td>
+                                            <td className="p-2 text-right text-orange-500">{formatCurrency(emi.lateFee || 0)}</td>
+                                            <td className="p-2">{formatDate(emi.dueDate)}</td>
+                                            <td className="p-2">{formatDate(emi.paidDate) || 'N/A'}</td>
+                                            <td className="p-2 text-center">
+                                              <Badge status={emi.status} />
+                                            </td>
+                                            <td className="p-2 text-right">
+                                              {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial' || emi.status === 'pending_collection') && (
+                                                <div className="flex gap-2 justify-end flex-wrap">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setCollectEmi(emi);
+                                                      setPaymentMethod('cash');
+                                                      setReferenceNumber('');
+                                                    }}
+                                                    className="btn-success text-xs py-1 px-2"
+                                                  >
+                                                    {t('adminEmis.collectBtn')}
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      setPenaltyEmi(emi);
+                                                      setPenalty(emi.penalty || 0);
+                                                    }}
+                                                    className="btn-secondary text-xs py-1 px-2"
+                                                  >
+                                                    {t('adminEmis.penaltyBtn')}
+                                                  </button>
+                                                </div>
+                                              )}
+                                              {emi.status === 'paid' && (
+                                                <span className="text-xs text-emerald-600 font-medium">✓ Paid</span>
+                                              )}
+                                              {emi.status === 'closed' && (
+                                                <span className="text-xs text-gray-500 font-medium">Closed</span>
+                                              )}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="p-4 text-center text-sm text-gray-500">
+                                  No EMIs found for this loan
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="p-4 text-center text-gray-500">{t('userDetail.noLoans')}</p>
+        )}
       </div>
 
-      <div className="card overflow-x-auto">
-        <div className="p-4 border-b dark:border-gray-700">
-          <h2 className="font-semibold">{t('userDetail.emis')} ({emis.length})</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b dark:border-gray-700 text-left">
-              <th className="p-3">EMI #</th>
-              <th className="p-3">{t('table.amount')}</th>
-              <th className="p-3">{t('emi.dueDate')}</th>
-              <th className="p-3">{t('table.status')}</th>
-              <th className="p-3">{t('userDetail.pending')}</th>
-              <th className="p-3 text-right">{t('table.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {emis.map((emi) => (
-              <tr key={emi._id} className="border-b dark:border-gray-700/50">
-                <td className="p-3">{emi.emiNumber}</td>
-                <td className="p-3">{formatCurrency(emi.amount)}</td>
-                <td className="p-3">{formatDate(emi.dueDate)}</td>
-                <td className="p-3"><Badge status={emi.status} /></td>
-                <td className="p-3">{formatCurrency(emi.pendingAmount)}</td>
-                <td className="p-3 text-right">
-                  {(emi.status === 'pending' || emi.status === 'overdue' || emi.status === 'partial' || emi.status === 'pending_collection') && (
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCollectEmi(emi);
-                          setPaymentMethod('cash');
-                          setReferenceNumber('');
-                        }}
-                        className="btn-success text-xs py-1 px-2"
-                      >
-                        {t('adminEmis.collectBtn')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPenaltyEmi(emi);
-                          setPenalty(emi.penalty || 0);
-                        }}
-                        className="btn-secondary text-xs py-1 px-2"
-                      >
-                        {t('adminEmis.penaltyBtn')}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!emis.length && <p className="p-4 text-center text-gray-500">{t('userDetail.noEmis')}</p>}
-      </div>
-
+      {/* Collect EMI Modal */}
       <Modal isOpen={!!collectEmi} onClose={() => setCollectEmi(null)} title={t('adminEmis.collectTitle')}>
         <div className="space-y-4">
           <p className="text-sm text-gray-500">EMI #{collectEmi?.emiNumber} — {user?.name}</p>
@@ -259,6 +375,7 @@ const UserDetail = () => {
         </div>
       </Modal>
 
+      {/* Penalty Modal */}
       <Modal isOpen={!!penaltyEmi} onClose={() => setPenaltyEmi(null)} title={t('adminEmis.penaltyTitle')}>
         <div className="space-y-4">
           <p>EMI #{penaltyEmi?.emiNumber}</p>
