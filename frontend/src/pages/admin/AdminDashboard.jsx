@@ -294,19 +294,22 @@ const AdminDashboard = () => {
         </div>
       </section>
 
-      {/* ===== STATS FILTER BAR with proper labels ===== */}
+      {/* ===== STATS FILTER BAR (compact) ===== */}
       <section>
-        <div className="bg-white dark:bg-primary-800 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-              {t('adminDash.periodFilter') || 'Period Filter'}
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Period dropdown */}
+       <div className="bg-white dark:bg-primary-800 rounded-xl shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4">
+          {/* justify-between laga kar right side push kiya hai */}
+          <div className="flex flex-wrap items-center gap-2 sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:block text-sm font-medium text-primary-700 dark:text-primary-300 whitespace-nowrap">
+                {t('adminDash.periodFilter') || 'Today / Weekly / Monthly'}
+              </span>
+              <span className="sm:hidden text-sm font-medium text-primary-700 dark:text-primary-300">
+                Filter
+              </span>
               <select
                 value={filterPeriod}
                 onChange={handleFilterPeriodChange}
-                className="form-select rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
+                className="h-8 w-[85px] sm:w-[110px] rounded-md border border-primary-200 bg-white px-2 sm:px-3 text-sm dark:border-primary-700 dark:bg-primary-800"
               >
                 <option value="today">{periodLabel('today')}</option>
                 <option value="week">{periodLabel('week')}</option>
@@ -315,19 +318,18 @@ const AdminDashboard = () => {
                 <option value="6month">{periodLabel('6month')}</option>
                 <option value="year">{periodLabel('year')}</option>
               </select>
-
-              {/* Month picker with proper label */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
-                  {t('Select month') || 'Select Month:'}
-                </span>
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={handleMonthChange}
-                  className="form-input rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800 w-auto max-w-[140px]"
-                />
-              </div>
+            </div>
+            {/* Right side group */}
+            <div className="flex items-center gap-1.5">
+              <span className="hidden sm:block text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                {t('Select month') || 'Select Month'}
+              </span>
+              <input
+                type="month"
+                value={selectedChartMonth}
+                onChange={handleChartMonthChange}
+                className="h-8 w-[110px] sm:w-[130px] rounded-md border border-primary-200 bg-white px-2 sm:px-3 text-sm dark:border-primary-700 dark:bg-primary-800"
+              />
             </div>
           </div>
         </div>
@@ -357,19 +359,22 @@ const AdminDashboard = () => {
         </div>
       </section>
 
-      {/* ===== CHARTS FILTER BAR with proper labels ===== */}
+      {/* ===== CHARTS FILTER BAR (compact – same design) ===== */}
       <section>
-        <div className="bg-white dark:bg-primary-800 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4 mb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
-              {t('adminDash.periodGraphs') || 'Period Graphs'}
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Chart period dropdown */}
+               <div className="bg-white dark:bg-primary-800 rounded-xl shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4 mb-3">
+          {/* justify-between laga kar right side push kiya hai */}
+          <div className="flex flex-wrap items-center gap-2 sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:block text-sm font-medium text-primary-700 dark:text-primary-300 whitespace-nowrap">
+                {t('adminDash.periodGraphs') || 'EMI / Interest / Profit Graphs'}
+              </span>
+              <span className="sm:hidden text-sm font-medium text-primary-700 dark:text-primary-300">
+                Graphs
+              </span>
               <select
-                value={chartPeriod}
-                onChange={handleChartPeriodChange}
-                className="form-select rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
+                value={filterPeriod}
+                onChange={handleFilterPeriodChange}
+                className="h-8 w-[85px] sm:w-[110px] rounded-md border border-primary-200 bg-white px-2 sm:px-3 text-sm dark:border-primary-700 dark:bg-primary-800"
               >
                 <option value="week">{periodLabel('week')}</option>
                 <option value="month">{periodLabel('month')}</option>
@@ -377,22 +382,22 @@ const AdminDashboard = () => {
                 <option value="6month">{periodLabel('6month')}</option>
                 <option value="year">{periodLabel('year')}</option>
               </select>
-
-              {/* Chart month picker with proper label */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
-                  {t('Select month') || 'Chart Month:'}
-                </span>
-                <input
-                  type="month"
-                  value={selectedChartMonth}
-                  onChange={handleChartMonthChange}
-                  className="form-input rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800 w-auto max-w-[140px]"
-                />
-              </div>
+            </div>
+            {/* Right side group */}
+            <div className="flex items-center gap-1.5">
+              <span className="hidden sm:block text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                {t('Select month') || 'Select Month'}
+              </span>
+              <input
+                type="month"
+                value={selectedChartMonth}
+                onChange={handleChartMonthChange}
+                className="h-8 w-[110px] sm:w-[130px] rounded-md border border-primary-200 bg-white px-2 sm:px-3 text-sm dark:border-primary-700 dark:bg-primary-800"
+              />
             </div>
           </div>
         </div>
+
 
         {/* Chart cards (unchanged) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">

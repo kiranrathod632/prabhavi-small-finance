@@ -293,7 +293,7 @@ const ManageAdmins = () => {
       />
 
       {/* --- NEW: Period Filter Bar --- */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 bg-white dark:bg-primary-800 p-3 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700">
+      {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 bg-white dark:bg-primary-800 p-3 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
             {t('manageAdmins.filterByPeriod') || 'Filter by period:'}
@@ -336,7 +336,7 @@ const ManageAdmins = () => {
             </button>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Same clean table pattern as User Management — works on all mobile widths */}
       <div className="card">
