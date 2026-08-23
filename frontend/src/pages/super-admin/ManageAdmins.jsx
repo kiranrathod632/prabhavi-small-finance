@@ -38,10 +38,22 @@ const ManageAdmins = () => {
     mobile: '',
   });
 
-  const fetchAdmins = async () => {
+  // --- NEW: period filter state ---
+  const [filterPeriod, setFilterPeriod] = useState('today'); // today | week | month | 3month | 6month | year
+  const [selectedMonth, setSelectedMonth] = useState('');   // YYYY-MM
+  const [useCustomMonth, setUseCustomMonth] = useState(false);
+
+  // --- MODIFIED: fetchAdmins now accepts period/month params ---
+  const fetchAdmins = async (params = {}) => {
     setLoading(true);
     try {
-      const { data } = await adminPanelAPI.getAdmins();
+      const query = { ...params };
+      if (useCustomMonth && selectedMonth) {
+        query.month = selectedMonth;
+      } else if (filterPeriod) {
+        query.period = filterPeriod;
+      }
+      const { data } = await adminPanelAPI.getAdmins(query);
       setAdmins(data.data || []);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -50,7 +62,37 @@ const ManageAdmins = () => {
     }
   };
 
-  useEffect(() => { fetchAdmins(); }, []);
+  // Initial load
+  useEffect(() => {
+    fetchAdmins();
+    // eslint-disable-next-line
+  }, []);
+
+  // When filterPeriod changes, reset custom month and refetch
+  const handlePeriodChange = (e) => {
+    const period = e.target.value;
+    setFilterPeriod(period);
+    setUseCustomMonth(false);
+    setSelectedMonth('');
+    fetchAdmins({ period });
+  };
+
+  // Apply custom month
+  const handleApplyMonth = () => {
+    if (!selectedMonth) {
+      toast.error(t('manageAdmins.selectMonth') || 'Please select a month');
+      return;
+    }
+    setUseCustomMonth(true);
+    fetchAdmins({ month: selectedMonth });
+  };
+
+  // Reset custom month
+  const handleResetMonth = () => {
+    setUseCustomMonth(false);
+    setSelectedMonth('');
+    fetchAdmins({ period: filterPeriod });
+  };
 
   const resetCreateForm = () => {
     setCreateStep(1);
@@ -182,7 +224,7 @@ const ManageAdmins = () => {
       }
       setModalOpen(false);
       resetCreateForm();
-      fetchAdmins();
+      fetchAdmins(); // refresh with current filter
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -219,12 +261,24 @@ const ManageAdmins = () => {
       >
         <HiEye className="w-4 h-4" />
       </button>
-      {/* <button type="button" onClick={() => openEdit(admin)} className="btn-secondary action-chip">{t('update')}</button> */}
       <button type="button" onClick={() => toggleActive(admin)} className="btn-secondary action-chip">
         {admin.isActive ? t('ui.deactivate') : t('ui.activate')}
       </button>
     </>
   );
+
+  // --- Period label helper (same as in dashboard) ---
+  const periodLabel = (key) => {
+    const map = {
+      today: t('adminDash.today'),
+      week: t('adminDash.thisWeek'),
+      month: t('adminDash.thisMonth'),
+      '3month': t('adminDash.last3Months') || '3 Months',
+      '6month': t('adminDash.last6Months') || '6 Months',
+      year: t('adminDash.thisYear'),
+    };
+    return map[key] || key;
+  };
 
   return (
     <div className="page-stack">
@@ -232,9 +286,57 @@ const ManageAdmins = () => {
         title={t('manageAdmins.title')}
         subtitle={t('manageAdmins.hint') || 'Create Admins like Kiran. They create Users under them.'}
         actions={
-          <button type="button" onClick={openCreate} className="btn-primary">{t('manageAdmins.createAdmin')}</button>
+          <button type="button" onClick={openCreate} className="btn-primary">
+            {t('manageAdmins.createAdmin')}
+          </button>
         }
       />
+
+      {/* --- NEW: Period Filter Bar --- */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 bg-white dark:bg-primary-800 p-3 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+            {t('manageAdmins.filterByPeriod') || 'Filter by period:'}
+          </span>
+          <select
+            value={filterPeriod}
+            onChange={handlePeriodChange}
+            className="form-select rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
+          >
+            <option value="today">{periodLabel('today')}</option>
+            <option value="week">{periodLabel('week')}</option>
+            <option value="month">{periodLabel('month')}</option>
+            <option value="3month">{periodLabel('3month')}</option>
+            <option value="6month">{periodLabel('6month')}</option>
+            <option value="year">{periodLabel('year')}</option>
+          </select>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="form-input rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
+          />
+          <button
+            type="button"
+            onClick={handleApplyMonth}
+            className="btn-primary rounded-md px-4 py-1.5 text-sm"
+          >
+            {t('apply') || 'Apply'}
+          </button>
+          {useCustomMonth && (
+            <button
+              type="button"
+              onClick={handleResetMonth}
+              className="btn-secondary rounded-md px-4 py-1.5 text-sm"
+            >
+              {t('reset') || 'Reset'}
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Same clean table pattern as User Management — works on all mobile widths */}
       <div className="card">
@@ -266,7 +368,6 @@ const ManageAdmins = () => {
                       title={t('manageAdmins.viewUsersList')}
                     >
                       {admin.joinedUsersCount || 0}
-                      {/* <HiEye className="w-3.5 h-3.5 opacity-70" /> */}
                     </button>
                   </td>
                   <td className="text-right font-semibold text-green-600 whitespace-nowrap">
@@ -293,6 +394,7 @@ const ManageAdmins = () => {
         )}
       </div>
 
+      {/* Create/Edit Modal (unchanged) */}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); resetCreateForm(); }}
@@ -446,6 +548,7 @@ const ManageAdmins = () => {
         )}
       </Modal>
 
+      {/* View Joined Users Modal (unchanged) */}
       <Modal
         isOpen={!!viewAdmin}
         onClose={() => setViewAdmin(null)}

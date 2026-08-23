@@ -42,12 +42,24 @@ const AdminDashboard = () => {
   const [purchaseActionLoading, setPurchaseActionLoading] = useState('');
   const [emiTotalsPeriod, setEmiTotalsPeriod] = useState('week');
   const [chartPeriod, setChartPeriod] = useState('week');
-  const [filterPeriod, setFilterPeriod] = useState('today'); // today | week | month
+  const [filterPeriod, setFilterPeriod] = useState('today');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [useCustomMonth, setUseCustomMonth] = useState(false);
+  const [selectedChartMonth, setSelectedChartMonth] = useState('');
+  const [useCustomChartMonth, setUseCustomChartMonth] = useState(false);
 
-  const fetchDashboard = async () => {
+  // ----- fetchDashboard with optional params -----
+  const fetchDashboard = async (params = {}) => {
     try {
+      const query = { ...params };
+      if (useCustomMonth && selectedMonth) {
+        query.month = selectedMonth;
+      }
+      if (useCustomChartMonth && selectedChartMonth) {
+        query.chartMonth = selectedChartMonth;
+      }
       const [dashboardRes, usersRes, loansRes] = await Promise.all([
-        adminPanelAPI.getDashboard(),
+        adminPanelAPI.getDashboard(query),
         adminPanelAPI.getUsers({ page: 1, limit: 8, includeAdmin: true }),
         adminPanelAPI.getLoans({ page: 1, limit: 8, status: 'pending' }),
       ]);
@@ -63,8 +75,10 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboard();
+    // eslint-disable-next-line
   }, []);
 
+  // ----- Fund, Loan, Purchase handlers (unchanged) -----
   const handleFundUpdate = async (e) => {
     e.preventDefault();
     if (!fundAmount || Number(fundAmount) <= 0) {
@@ -121,6 +135,76 @@ const AdminDashboard = () => {
     }
   };
 
+  // ----- Stats filter handlers (auto‑apply) -----
+  const handleFilterPeriodChange = (e) => {
+    const period = e.target.value;
+    setFilterPeriod(period);
+    setUseCustomMonth(false);
+    setSelectedMonth('');
+    fetchDashboard({ period });
+  };
+
+  const handleMonthChange = (e) => {
+    const month = e.target.value;
+    setSelectedMonth(month);
+    if (month) {
+      setUseCustomMonth(true);
+      fetchDashboard({ month });
+    } else {
+      setUseCustomMonth(false);
+      fetchDashboard({ period: filterPeriod });
+    }
+  };
+
+  const handleLastMonth = () => {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = prev.getFullYear();
+    const month = String(prev.getMonth() + 1).padStart(2, '0');
+    const monthStr = `${year}-${month}`;
+    setSelectedMonth(monthStr);
+    setUseCustomMonth(true);
+    fetchDashboard({ month: monthStr });
+  };
+
+  // ----- Chart filter handlers (auto‑apply) -----
+  const handleChartPeriodChange = (e) => {
+    const period = e.target.value;
+    setChartPeriod(period);
+    if (useCustomChartMonth) {
+      setUseCustomChartMonth(false);
+      setSelectedChartMonth('');
+    }
+    fetchDashboard({ chartPeriod: period });
+  };
+
+  const handleChartMonthChange = (e) => {
+    const month = e.target.value;
+    setSelectedChartMonth(month);
+    if (month) {
+      setUseCustomChartMonth(true);
+      setChartPeriod('month');
+      fetchDashboard({ chartMonth: month });
+    } else {
+      setUseCustomChartMonth(false);
+      setChartPeriod('week');
+      fetchDashboard();
+    }
+  };
+
+  const handleLastChartMonth = () => {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = prev.getFullYear();
+    const month = String(prev.getMonth() + 1).padStart(2, '0');
+    const monthStr = `${year}-${month}`;
+    setSelectedChartMonth(monthStr);
+    setUseCustomChartMonth(true);
+    setChartPeriod('month');
+    fetchDashboard({ chartMonth: monthStr });
+  };
+
+  // ----- Loading & error states -----
   if (loading) {
     return (
       <div>
@@ -143,6 +227,7 @@ const AdminDashboard = () => {
 
   const { cards, charts, recentTransactions } = data;
 
+  // ----- Data extraction (unchanged) -----
   const emiTotal = pickPeriodTotal(cards, emiTotalsPeriod, 'emiTotal') || 0;
   const interestTotal = pickPeriodTotal(cards, emiTotalsPeriod, 'interestTotal') || 0;
   const profitTotal = pickPeriodTotal(cards, emiTotalsPeriod, 'profitTotal') || 0;
@@ -155,22 +240,26 @@ const AdminDashboard = () => {
   const loansChartData = periodCharts?.loansDisbursed?.[chartPeriod] || charts?.monthlyLoans || [];
   const penaltyChartData = periodCharts?.penalty?.[chartPeriod] || [];
 
-  const periodKey = filterPeriod === 'today' ? 'Today' : filterPeriod === 'week' ? 'Weekly' : 'Monthly';
+  const getPeriodKey = () => {
+    if (useCustomMonth) return 'Monthly';
+    const keyMap = {
+      today: 'Today',
+      week: 'Weekly',
+      month: 'Monthly',
+      '3month': '3Month',
+      '6month': '6Month',
+      year: 'Yearly',
+    };
+    return keyMap[filterPeriod] || 'Monthly';
+  };
+  const periodKey = getPeriodKey();
 
   const filteredEmi = Number(cards[`emiTotal${periodKey}`] || 0);
   const filteredInterest = Number(cards[`interestTotal${periodKey}`] || 0);
   const filteredProfit = Number(cards[`profitTotal${periodKey}`] || 0);
-  const filteredPenalty = Number(
-    cards[`penaltyTotal${periodKey}`]
-    ?? cards[filterPeriod === 'today' ? 'todayPenalty' : filterPeriod === 'week' ? 'weeklyPenalty' : 'monthlyPenalty']
-    ?? 0
-  );
+  const filteredPenalty = Number(cards[`penaltyTotal${periodKey}`] || 0);
   const filteredLoan = Number(cards[`loanDisbursed${periodKey}`] || 0);
-  const filteredFee = Number(
-    cards[`processingFeeTotal${periodKey}`]
-    ?? cards[filterPeriod === 'today' ? 'todayProcessingFees' : filterPeriod === 'week' ? 'weeklyProcessingFees' : 'monthlyProcessingFees']
-    ?? 0
-  );
+  const filteredFee = Number(cards[`processingFeeTotal${periodKey}`] || 0);
   const filteredUsers = Number(cards[`usersRegistered${periodKey}`] || 0);
 
   const periodLabel = (key) => {
@@ -178,8 +267,8 @@ const AdminDashboard = () => {
       today: t('adminDash.today'),
       week: t('adminDash.thisWeek'),
       month: t('adminDash.thisMonth'),
-      month3: t('adminDash.last3Months') || '3 Months',
-      month6: t('adminDash.last6Months') || '6 Months',
+      '3month': t('adminDash.last3Months') || '3 Months',
+      '6month': t('adminDash.last6Months') || '6 Months',
       year: t('adminDash.thisYear'),
     };
     return map[key] || key;
@@ -187,12 +276,9 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-8">
-      <PageHeader
-        title={t('adminDash.title')}
-       
-      />
+      <PageHeader title={t('adminDash.title')} />
 
-      {/* Overview totals — always visible */}
+      {/* Overview totals (unchanged) */}
       <section>
         <p className="section-label">{t('adminDash.overview') || 'Overview'}</p>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
@@ -204,33 +290,55 @@ const AdminDashboard = () => {
           <StatCard title={t('adminDash.totalInterest') || 'Total Interest'} value={formatCurrency(cards.totalInterestEarned || 0)} color="indigo" />
           <StatCard title={t('adminDash.processingFeeAmount') || 'Processing Fee'} value={formatCurrency(cards.totalProcessingFees || 0)} color="yellow" />
           <StatCard title={t('adminDash.companyFund')} value={formatCurrency(cards.companyFund)} color="indigo" />
-        <StatCard title={t('adminDash.expenses')} value={formatCurrency(cards.expenses || cards.purchaseApprovedTotal || 0)} color="red" />
+          <StatCard title={t('adminDash.expenses')} value={formatCurrency(cards.expenses || cards.purchaseApprovedTotal || 0)} color="red" />
         </div>
       </section>
 
-      {/* Today / Weekly / Monthly filter */}
+      {/* ===== STATS FILTER BAR with proper labels ===== */}
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-          <p className="section-label !mb-0">{t('adminDash.periodFilter') || 'Period Filter'}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {['today', 'week', 'month'].map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setFilterPeriod(p)}
-                className={filterPeriod === p ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
+        <div className="bg-white dark:bg-primary-800 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {t('adminDash.periodFilter') || 'Period Filter'}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Period dropdown */}
+              <select
+                value={filterPeriod}
+                onChange={handleFilterPeriodChange}
+                className="form-select rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
               >
-                {periodLabel(p)}
-              </button>
-            ))}
+                <option value="today">{periodLabel('today')}</option>
+                <option value="week">{periodLabel('week')}</option>
+                <option value="month">{periodLabel('month')}</option>
+                <option value="3month">{periodLabel('3month')}</option>
+                <option value="6month">{periodLabel('6month')}</option>
+                <option value="year">{periodLabel('year')}</option>
+              </select>
+
+              {/* Month picker with proper label */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                  {t('Select month') || 'Select Month:'}
+                </span>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={handleMonthChange}
+                  className="form-input rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800 w-auto max-w-[140px]"
+                />
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Stats cards */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4 mt-3 sm:mt-4">
           <StatCard title={t('adminDash.periodEmi') || 'EMI Collection'} value={formatCurrency(filteredEmi || 0)} color="green" />
           <StatCard title={t('adminDash.periodPenalty') || 'Penalty'} value={formatCurrency(filteredPenalty || 0)} color="red" />
           <StatCard title={t('adminDash.periodLoan') || 'Loan Given'} value={formatCurrency(filteredLoan || 0)} color="indigo" />
           <StatCard title={t('adminDash.periodInterest') || 'Interest'} value={formatCurrency(filteredInterest || 0)} color="primary" />
-           <StatCard title={t('adminDash.loanDistributed')} value={formatCurrency(cards.loanDistributed)} color="red" />
+          <StatCard title={t('adminDash.loanDistributed')} value={formatCurrency(cards.loanDistributed)} color="red" />
           <StatCard title={t('adminDash.periodFee') || 'Processing Fee'} value={formatCurrency(filteredFee || 0)} color="yellow" />
           <StatCard title={t('adminDash.periodProfit') || 'Profit'} value={formatCurrency(filteredProfit || 0)} color="green" />
           <StatCard title={t('adminDash.usersRegistered') || 'Users Registered'} value={filteredUsers || 0} color="primary" />
@@ -238,6 +346,7 @@ const AdminDashboard = () => {
         </div>
       </section>
 
+      {/* Loan stats (unchanged) */}
       <section>
         <p className="section-label">{t('loans')}</p>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
@@ -248,34 +357,44 @@ const AdminDashboard = () => {
         </div>
       </section>
 
-      {/* <section>
-        <p className="section-label">{t('adminEmis.title')}</p>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-4">
-          <StatCard title={t('adminDash.todayEmi')} value={formatCurrency(cards.todayEMICollection)} color="green" />
-          <StatCard title={t('adminDash.monthlyCollection')} value={formatCurrency(cards.monthlyCollection)} color="primary" />
-          <StatCard title={t('adminDash.loanDistributed')} value={formatCurrency(cards.loanDistributed)} color="red" />
-          <StatCard title={t('adminDash.emiCollected')} value={formatCurrency(cards.emiCollected)} color="green" />
-        </div>
-      </section> */}
-
-
-      {/* Period graphs: EMI collection / Interest / Profit */}
+      {/* ===== CHARTS FILTER BAR with proper labels ===== */}
       <section>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-3">
-          <p className="section-label !mb-0">{t('adminDash.periodGraphs') || 'Period Graphs'}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {PERIOD_OPTIONS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setChartPeriod(p)}
-                className={chartPeriod === p ? 'btn-primary action-chip' : 'btn-secondary action-chip'}
+        <div className="bg-white dark:bg-primary-800 rounded-lg shadow-sm border border-primary-100 dark:border-primary-700 p-3 sm:p-4 mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {t('adminDash.periodGraphs') || 'Period Graphs'}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Chart period dropdown */}
+              <select
+                value={chartPeriod}
+                onChange={handleChartPeriodChange}
+                className="form-select rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800"
               >
-                {periodLabel(p)}
-              </button>
-            ))}
+                <option value="week">{periodLabel('week')}</option>
+                <option value="month">{periodLabel('month')}</option>
+                <option value="3month">{periodLabel('3month')}</option>
+                <option value="6month">{periodLabel('6month')}</option>
+                <option value="year">{periodLabel('year')}</option>
+              </select>
+
+              {/* Chart month picker with proper label */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                  {t('Select month') || 'Chart Month:'}
+                </span>
+                <input
+                  type="month"
+                  value={selectedChartMonth}
+                  onChange={handleChartMonthChange}
+                  className="form-input rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm dark:border-primary-700 dark:bg-primary-800 w-auto max-w-[140px]"
+                />
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Chart cards (unchanged) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
           <div className="card card-chart">
             <div className="card-header">
@@ -327,7 +446,9 @@ const AdminDashboard = () => {
           </div>
         </div>
       </section>
-   <div className="card">
+
+      {/* Recent transactions (unchanged) */}
+      <div className="card">
         <div className="card-header">
           <h3 className="font-semibold text-sm sm:text-base text-primary-900 dark:text-white">{t('adminDash.recentTransactions')}</h3>
         </div>
