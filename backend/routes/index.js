@@ -13,13 +13,13 @@ import settingsRoutes from './settingsRoutes.js';
 import recoveryRoutes from './recoveryRoutes.js';
 import reportRoutes from './reportRoutes.js';
 import adminRoutes from './adminRoutes.js';
-
 import adminPanelRoutes from './adminPanelRoutes.js';
 import twilioTestRoutes from './twilioTestRoutes.js';
 import vobizTestRoutes from './vobizTestRoutes.js';
 
 const router = Router();
 
+// ✅ All your routes - UNCHANGED
 router.use('/auth', authRoutes);
 router.use('/otp', otpRoutes);
 router.use('/users', userRoutes);
@@ -38,4 +38,5 @@ router.use('/admins', adminRoutes);
 router.use('/admin', adminPanelRoutes);
 router.use('/vobiz', vobizTestRoutes);
 
+// ✅ Export ONLY the router (NOT handler)
 export default router;
