@@ -16,4 +16,22 @@ export default defineConfig({
       },
     },
   },
+  // ✅ ADD THESE FOR VERCEL DEPLOYMENT (Doesn't affect local dev)
+  base: '/',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
+  // ✅ For better production performance
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+  },
 });

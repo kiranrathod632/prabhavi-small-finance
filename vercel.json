@@ -9,13 +9,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://prabhavi-small-finance-app.vercel.app/api/$1",
-      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
+      "dest": "https://prabhavi-small-finance-app.vercel.app/api/$1"
     },
     {
       "src": "/assets/(.*)",
