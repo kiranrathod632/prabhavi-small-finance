@@ -39,7 +39,7 @@ const allowedOrigins = (() => {
   const fallbackOrigins = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://prabhavi-small-finance-app.vercel.app",
+    "https://prabhavi-small-finance.vercel.app",
   ];
   
   // Combine and deduplicate
