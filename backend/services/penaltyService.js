@@ -1,7 +1,7 @@
 import EMI from '../models/EMI.js';
 import Loan from '../models/Loan.js';
 import { getSettings } from './settingsService.js';
-import { calculatePenalty } from '../utils/helpers.js';
+// import { calculatePenalty } from '../utils/helpers.js';
 import { createNotification } from './notificationService.js';
 import { sendPenaltySms, sendEmiReminderSms } from './smsService.js';
 import { sendEmiReminderCall } from './voiceService.js';
@@ -9,12 +9,15 @@ import { sendEMIReminderEmail } from './emailService.js';
 import User from '../models/User.js';
 import RecoveryCase from '../models/RecoveryCase.js';
 
-/**
- * Apply penalties to overdue EMIs
- */
+
 export const applyOverduePenalties = async () => {
   const settings = await getSettings();
   if (!settings.penaltyEnabled) return { updated: 0 };
+
+  // Load penalty config from settings, with defaults
+  const graceDays = settings.penaltyGraceDays ?? 5;
+  const basePenalty = settings.penaltyBaseAmount ?? 200;
+  const dailyRate = settings.penaltyDailyRate ?? 10;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -29,9 +32,25 @@ export const applyOverduePenalties = async () => {
 
   for (const emi of overdueEmis) {
     const daysOverdue = Math.ceil((today - new Date(emi.dueDate)) / (1000 * 60 * 60 * 24));
-    const { lateFee, dailyPenalty, totalPenalty } = calculatePenalty(emi, settings, daysOverdue);
 
-    if (totalPenalty > 0 && emi.status !== 'overdue') {
+    // --- NEW PENALTY CALCULATION ---
+    let totalPenalty = 0;
+    let lateFee = 0;
+    let dailyPenalty = 0;
+
+    if (daysOverdue > graceDays) {
+      const extraDays = daysOverdue - graceDays;
+      totalPenalty = basePenalty + (extraDays * dailyRate);
+      lateFee = basePenalty;          // base penalty stored as lateFee (backward compatible)
+      dailyPenalty = extraDays * dailyRate;
+    }
+    // Round to 2 decimals
+    totalPenalty = Math.round(totalPenalty * 100) / 100;
+    lateFee = Math.round(lateFee * 100) / 100;
+    dailyPenalty = Math.round(dailyPenalty * 100) / 100;
+
+    // Only apply if totalPenalty > 0 and changed
+    if (totalPenalty > 0 && (emi.penalty !== totalPenalty || emi.lateFee !== lateFee || emi.dailyPenalty !== dailyPenalty)) {
       // Keep pending_collection so admin still sees user's payment request
       if (emi.status !== 'pending_collection') {
         emi.status = 'overdue';
@@ -383,6 +402,6 @@ export const sendTestUpcomingReminders = async () => {
   console.log(
     `[EMI Test Reminder] Done | found=${pendingEmis.length} | sent=${sent} | failed=${failed} | rateLimited=${rateLimited} | skipped=${skipped}`
   );
-  
+
   return { sent, failed, rateLimited, skipped, total: pendingEmis.length };
 };
