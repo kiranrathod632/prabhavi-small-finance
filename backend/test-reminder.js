@@ -4,7 +4,6 @@ import { sendEmiReminderSms } from './services/smsService.js';
 
 dotenv.config();
 
-// ✅ Test reminder SMS
 const testReminder = async () => {
   console.log('📱 Sending test reminder SMS...');
   
