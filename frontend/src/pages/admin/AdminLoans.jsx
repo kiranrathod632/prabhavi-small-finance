@@ -25,7 +25,7 @@
 //   const [actionLoan, setActionLoan] = useState(null);
 //   const [actionType, setActionType] = useState('');
 //   const [rejectReason, setRejectReason] = useState('');
-  
+
 //   const [interestRate, setInterestRate] = useState('');
 //   const [interestType, setInterestType] = useState('reducing_balance');
 //   const [interestRatePeriod, setInterestRatePeriod] = useState('monthly');
@@ -39,7 +39,7 @@
 //   const [dailyPenaltyRate, setDailyPenaltyRate] = useState('');
 //   const [penaltyEnabled, setPenaltyEnabled] = useState(false);
 //   const [bounceCharge, setBounceCharge] = useState('');
-  
+
 //   const [selectedTenure, setSelectedTenure] = useState('');
 //   const [manualTenure, setManualTenure] = useState('');
 //   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +86,7 @@
 //     setManualTenure('');
 //     submittingRef.current = false;
 //     setSubmitting(false);
-    
+
 //     if (defaultSettings) {
 //       setInterestRate(loan.interestRate || defaultSettings.defaultInterestRate || '');
 //       setInterestType(loan.interestType || defaultSettings.interestType || 'reducing_balance');
@@ -100,7 +100,7 @@
 //       setDailyPenaltyRate(defaultSettings.dailyPenaltyRate || '');
 //       setPenaltyEnabled(defaultSettings.penaltyEnabled || false);
 //       setBounceCharge(defaultSettings.bounceCharge || '');
-      
+
 //       if (defaultSettings.gstEnabled && defaultSettings.processingFeeValue) {
 //         const fee = parseFloat(defaultSettings.processingFeeValue) || 0;
 //         const gst = (fee * (parseFloat(defaultSettings.gstPercent) || 0)) / 100;
@@ -166,11 +166,11 @@
 //     setSubmitting(true);
 //     try {
 //       const data = { status: actionType };
-      
+
 //       if (actionType === 'rejected') {
 //         data.rejectedReason = rejectReason;
 //       }
-      
+
 //       if (actionType === 'approved') {
 //         const tenureValue = selectedTenure || (manualTenure ? parseInt(manualTenure, 10) : null);
 //         if (!tenureValue || Number.isNaN(tenureValue) || tenureValue < 1) {
@@ -179,42 +179,42 @@
 //           setSubmitting(false);
 //           return;
 //         }
-        
+
 //         data.tenure = tenureValue;
-        
+
 //         if (interestRate) data.interestRate = parseFloat(interestRate);
 //         data.interestType = interestType;
 //         data.interestRatePeriod = interestRatePeriod;
-        
+
 //         let processingFee = 0;
 //         if (processingFeeType === 'flat') {
 //           processingFee = parseFloat(processingFeeValue) || 0;
 //         } else if (processingFeeType === 'percentage' && actionLoan) {
 //           processingFee = ((parseFloat(processingFeePercent) || 0) * (actionLoan.amount || 0)) / 100;
 //         }
-        
+
 //         data.processingFee = processingFee;
 //         data.processingFeeType = processingFeeType;
 //         data.processingFeeValue = parseFloat(processingFeeValue) || 0;
 //         data.processingFeePercent = parseFloat(processingFeePercent) || 0;
-        
+
 //         data.gstEnabled = gstEnabled;
 //         data.gstPercent = parseFloat(gstPercent) || 0;
 //         data.gstAmount = parseFloat(gstAmount) || 0;
-        
+
 //         data.latePaymentPenalty = parseFloat(latePaymentPenalty) || 0;
 //         data.dailyPenaltyRate = parseFloat(dailyPenaltyRate) || 0;
 //         data.penaltyEnabled = penaltyEnabled;
 //         data.bounceCharge = parseFloat(bounceCharge) || 0;
 //       }
-      
+
 //       await adminPanelAPI.updateLoan(actionLoan._id, data);
 //       toast.success(
 //         actionType === 'approved'
 //           ? t('adminLoans.approvedDisbursed')
 //           : t(`statusLabel.${actionType}`)
 //       );
-      
+
 //       resetFields();
 //       fetchLoans();
 //       refreshAdminCounts();
@@ -561,7 +561,7 @@
 //                 </div>
 //               )}
 //             </div>
-            
+
 //             {actionLoan && (
 //               <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
 //                 <span className="font-medium">{t('adminLoans.calculatedFee')}: </span>
@@ -760,7 +760,7 @@ const AdminLoans = () => {
   const [actionLoan, setActionLoan] = useState(null);
   const [actionType, setActionType] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  
+
   const [interestRate, setInterestRate] = useState('');
   const [interestType, setInterestType] = useState('reducing_balance');
   const [interestRatePeriod, setInterestRatePeriod] = useState('monthly');
@@ -774,13 +774,13 @@ const AdminLoans = () => {
   const [dailyPenaltyRate, setDailyPenaltyRate] = useState('');
   const [penaltyEnabled, setPenaltyEnabled] = useState(false);
   const [bounceCharge, setBounceCharge] = useState('');
-  
+
   const [selectedTenure, setSelectedTenure] = useState('');
   const [manualTenure, setManualTenure] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [defaultSettings, setDefaultSettings] = useState(null);
-  
+
   // NEW: State for expandable EMIs
   const [expandedLoans, setExpandedLoans] = useState({});
   const [emisData, setEmisData] = useState({});
@@ -821,7 +821,7 @@ const AdminLoans = () => {
   // NEW: Fetch EMIs for a specific loan when expanded
   const fetchLoanEmis = async (loanId) => {
     if (emisData[loanId]) return; // Already fetched
-    
+
     setLoadingEmis(prev => ({ ...prev, [loanId]: true }));
     try {
       const res = await adminPanelAPI.getEMIs({ loanId, limit: 100 });
@@ -841,7 +841,7 @@ const AdminLoans = () => {
       ...prev,
       [loanId]: isExpanded,
     }));
-    
+
     // Fetch EMIs if expanding and not already loaded
     if (isExpanded && !emisData[loanId]) {
       fetchLoanEmis(loanId);
@@ -856,7 +856,7 @@ const AdminLoans = () => {
     setManualTenure('');
     submittingRef.current = false;
     setSubmitting(false);
-    
+
     if (defaultSettings) {
       setInterestRate(loan.interestRate || defaultSettings.defaultInterestRate || '');
       setInterestType(loan.interestType || defaultSettings.interestType || 'reducing_balance');
@@ -870,7 +870,7 @@ const AdminLoans = () => {
       setDailyPenaltyRate(defaultSettings.dailyPenaltyRate || '');
       setPenaltyEnabled(defaultSettings.penaltyEnabled || false);
       setBounceCharge(defaultSettings.bounceCharge || '');
-      
+
       if (defaultSettings.gstEnabled && defaultSettings.processingFeeValue) {
         const fee = parseFloat(defaultSettings.processingFeeValue) || 0;
         const gst = (fee * (parseFloat(defaultSettings.gstPercent) || 0)) / 100;
@@ -935,11 +935,11 @@ const AdminLoans = () => {
     setSubmitting(true);
     try {
       const data = { status: actionType };
-      
+
       if (actionType === 'rejected') {
         data.rejectedReason = rejectReason;
       }
-      
+
       if (actionType === 'approved') {
         const tenureValue = selectedTenure || (manualTenure ? parseInt(manualTenure, 10) : null);
         if (!tenureValue || Number.isNaN(tenureValue) || tenureValue < 1) {
@@ -948,42 +948,42 @@ const AdminLoans = () => {
           setSubmitting(false);
           return;
         }
-        
+
         data.tenure = tenureValue;
-        
+
         if (interestRate) data.interestRate = parseFloat(interestRate);
         data.interestType = interestType;
         data.interestRatePeriod = interestRatePeriod;
-        
+
         let processingFee = 0;
         if (processingFeeType === 'flat') {
           processingFee = parseFloat(processingFeeValue) || 0;
         } else if (processingFeeType === 'percentage' && actionLoan) {
           processingFee = ((parseFloat(processingFeePercent) || 0) * (actionLoan.amount || 0)) / 100;
         }
-        
+
         data.processingFee = processingFee;
         data.processingFeeType = processingFeeType;
         data.processingFeeValue = parseFloat(processingFeeValue) || 0;
         data.processingFeePercent = parseFloat(processingFeePercent) || 0;
-        
+
         data.gstEnabled = gstEnabled;
         data.gstPercent = parseFloat(gstPercent) || 0;
         data.gstAmount = parseFloat(gstAmount) || 0;
-        
+
         data.latePaymentPenalty = parseFloat(latePaymentPenalty) || 0;
         data.dailyPenaltyRate = parseFloat(dailyPenaltyRate) || 0;
         data.penaltyEnabled = penaltyEnabled;
         data.bounceCharge = parseFloat(bounceCharge) || 0;
       }
-      
+
       await adminPanelAPI.updateLoan(actionLoan._id, data);
       toast.success(
         actionType === 'approved'
           ? t('adminLoans.approvedDisbursed')
           : t(`statusLabel.${actionType}`)
       );
-      
+
       resetFields();
       fetchLoans();
       refreshAdminCounts();
@@ -1242,7 +1242,9 @@ const AdminLoans = () => {
                                     <tbody>
                                       {loanEmis.map((emi) => (
                                         <tr key={emi._id} className="border-b dark:border-gray-700/50 hover:bg-white dark:hover:bg-slate-700/50 transition-colors bg-white dark:bg-slate-800">
-                                          <td className="pl-4 p-2 font-medium text-xs">{emi.emiNumber}</td>
+                                          <td className="pl-4 p-2 font-medium">
+                                            {emi.emiNumber ? emi.emiNumber.replace(/^[^-]+-/, '') : 'N/A'}
+                                          </td>
                                           <td className="p-2 text-right text-xs">{formatCurrency(emi.amount)}</td>
                                           <td className="p-2 text-right text-xs">{formatCurrency(emi.principal)}</td>
                                           <td className="p-2 text-right text-xs">{formatCurrency(emi.interest)}</td>
@@ -1279,9 +1281,9 @@ const AdminLoans = () => {
       <Pagination meta={meta} onPageChange={setPage} />
 
       {/* Approval Modal - Unchanged */}
-      <Modal 
-        isOpen={!!actionLoan && actionType === 'approved'} 
-        onClose={() => { if (!submittingRef.current) resetFields(); }} 
+      <Modal
+        isOpen={!!actionLoan && actionType === 'approved'}
+        onClose={() => { if (!submittingRef.current) resetFields(); }}
         title={t('adminLoans.approveTitle')}
         size="lg"
       >
@@ -1390,7 +1392,7 @@ const AdminLoans = () => {
                 <span>{t('loan.processingFee')}:</span>
                 <span className="font-medium text-red-600">
                   -{formatCurrency(
-                    processingFeeType === 'flat' 
+                    processingFeeType === 'flat'
                       ? (parseFloat(processingFeeValue) || 0)
                       : ((parseFloat(processingFeePercent) || 0) * (actionLoan?.amount || 0)) / 100
                   )}
@@ -1406,11 +1408,11 @@ const AdminLoans = () => {
                 <span className="font-semibold">{t('adminLoans.netDisbursed')}:</span>
                 <span className="font-semibold text-green-600">
                   {formatCurrency(
-                    (actionLoan?.amount || 0) - 
-                    (processingFeeType === 'flat' 
+                    (actionLoan?.amount || 0) -
+                    (processingFeeType === 'flat'
                       ? (parseFloat(processingFeeValue) || 0)
                       : ((parseFloat(processingFeePercent) || 0) * (actionLoan?.amount || 0)) / 100
-                    ) - 
+                    ) -
                     (gstEnabled ? (parseFloat(gstAmount) || 0) : 0)
                   )}
                 </span>
@@ -1431,9 +1433,9 @@ const AdminLoans = () => {
       </Modal>
 
       {/* Action Modal - Unchanged */}
-      <Modal 
-        isOpen={!!actionLoan && (actionType === 'under_review' || actionType === 'disbursed' || actionType === 'closed')} 
-        onClose={() => { if (!submittingRef.current) resetFields(); }} 
+      <Modal
+        isOpen={!!actionLoan && (actionType === 'under_review' || actionType === 'disbursed' || actionType === 'closed')}
+        onClose={() => { if (!submittingRef.current) resetFields(); }}
         title={t('adminLoans.actionLoanTitle', { action: getActionLabel(actionType) })}
       >
         <div className="space-y-4">
@@ -1455,20 +1457,20 @@ const AdminLoans = () => {
       </Modal>
 
       {/* Reject Modal - Unchanged */}
-      <Modal 
-        isOpen={!!actionLoan && actionType === 'rejected'} 
-        onClose={() => { if (!submittingRef.current) resetFields(); }} 
+      <Modal
+        isOpen={!!actionLoan && actionType === 'rejected'}
+        onClose={() => { if (!submittingRef.current) resetFields(); }}
         title={t('adminLoans.rejectTitle')}
       >
         <div className="space-y-4">
           <p>{t('adminLoans.loanLabel')}: <strong>{actionLoan?.loanId}</strong> - {formatCurrency(actionLoan?.amount)}</p>
           <div>
             <label className="label">{t('adminLoans.rejectionReason')}</label>
-            <textarea 
-              className="input" 
-              rows={3} 
-              value={rejectReason} 
-              onChange={(e) => setRejectReason(e.target.value)} 
+            <textarea
+              className="input"
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
               placeholder={t('adminLoans.rejectionPlaceholder')}
               disabled={submitting}
             />

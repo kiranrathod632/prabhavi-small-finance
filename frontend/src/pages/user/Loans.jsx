@@ -12,7 +12,7 @@ import Pagination from '../../components/Pagination';
 import Modal from '../../components/Modal';
 import PageHeader from '../../components/PageHeader';
 import { PageLoader } from '../../components/LoadingSpinner';
-import { HiPlus, HiDownload } from 'react-icons/hi';
+import { HiPlus, HiDownload, HiEye } from 'react-icons/hi';
 
 const LOAN_TYPE_KEYS = {
   personal: 'ui.personal',
@@ -105,8 +105,15 @@ const Loans = () => {
 
   const loanActions = (loan) => (
     <>
+      <Link 
+        to={`/loans/${loan._id}`} 
+        className="inline-flex items-center justify-center p-1.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm transition-colors"
+        title={t('ui.viewDetails')}
+      >
+        <HiEye className="w-3.5 h-3.5 text-primary-600" />
+      </Link>
       {loan.status === 'approved' && !loan.tenure && (
-        <Link to={`/loans/${loan._id}`} className="btn-primary action-chip">
+        <Link to={`/loans/${loan._id}`} className="btn-primary action-chip whitespace-nowrap text-xs py-1 px-2">
           {t('ui.selectTenure')}
         </Link>
       )}
@@ -114,10 +121,10 @@ const Loans = () => {
         <button
           type="button"
           onClick={() => handleDownload(loan._id, loan.loanId)}
-          className="text-accent-400 p-1"
+          className="inline-flex items-center justify-center p-1.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 shadow-sm transition-colors"
           title={t('ui.downloadStatement')}
         >
-          <HiDownload className="w-4 h-4" />
+          <HiDownload className="w-3.5 h-3.5 text-slate-500" />
         </button>
       )}
     </>
@@ -128,7 +135,7 @@ const Loans = () => {
       <PageHeader
         title={t('myLoans')}
         actions={
-          <button type="button" onClick={handleApplyClick} className="btn-primary">
+          <button type="button" onClick={handleApplyClick} className="btn-primary whitespace-nowrap">
             <HiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('ui.applyLoan')}
           </button>
         }
@@ -151,95 +158,49 @@ const Loans = () => {
         </select>
       </div>
 
-      <div className="mobile-list">
-        {loans.map((loan) => (
-          <div key={loan._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <Link to={`/loans/${loan._id}`} className="mobile-list-title link-accent">
-                  {loan.loanId}
-                </Link>
-                <p className="mobile-list-meta mt-0.5">{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Badge status={loan.status} />
-                {loan.status === 'approved' && !loan.tenure && (
-                  <span className="text-xs text-yellow-600">({t('ui.selectTenure')})</span>
-                )}
-              </div>
-            </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span>{formatCurrency(loan.amount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('ui.rate')}</label>
-                <span>{loan.interestRate}%</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('ui.tenure')}</label>
-                <span>{loan.tenure ? `${loan.tenure}m` : '-'}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('loan.emiAmount')}</label>
-                <span>{formatCurrency(loan.emiAmount)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('ui.remaining')}</label>
-                <span>{formatCurrency(loan.remainingBalance)}</span>
-              </div>
-              <div className="mobile-list-field">
-                <label>{t('table.date')}</label>
-                <span>{formatDate(loan.createdAt)}</span>
-              </div>
-            </div>
-            <div className="mobile-list-actions">{loanActions(loan)}</div>
-          </div>
-        ))}
-        {!loans.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('ui.noLoans')}</p>
-        )}
-      </div>
-
-      <div className="card desktop-table">
-        <div className="data-table-wrap">
-          <table className="data-table">
+      {/* Table View - Same for both mobile and desktop with horizontal scroll */}
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
             <thead>
-              <tr>
-                <th>{t('table.loanId')}</th>
-                <th>{t('table.type')}</th>
-                <th className="text-right">{t('table.amount')}</th>
-                <th className="text-right">{t('ui.rate')}</th>
-                <th className="text-right">{t('ui.tenure')}</th>
-                <th className="text-right">{t('loan.emiAmount')}</th>
-                <th className="text-right">{t('ui.remaining')}</th>
-                <th>{t('table.status')}</th>
-                <th>{t('table.date')}</th>
-                <th className="text-right">{t('table.actions')}</th>
+              <tr className="border-b dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">#</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.loanId')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.type')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.amount')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('ui.rate')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('ui.tenure')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('loan.emiAmount')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('ui.remaining')}</th>
+                <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.status')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.date')}</th>
+                <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {loans.map((loan) => (
-                <tr key={loan._id}>
-                  <td className="font-medium">
-                    <Link to={`/loans/${loan._id}`} className="link-accent">{loan.loanId}</Link>
+              {loans.map((loan, index) => (
+                <tr key={loan._id} className="border-b dark:border-gray-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <td className="p-3 text-slate-500 whitespace-nowrap">{index + 1}</td>
+                  <td className="p-3 font-medium whitespace-nowrap">
+                    <Link to={`/loans/${loan._id}`} className="text-primary-600 hover:underline">{loan.loanId}</Link>
                   </td>
-                  <td>{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</td>
-                  <td className="text-right">{formatCurrency(loan.amount)}</td>
-                  <td className="text-right">{loan.interestRate}%</td>
-                  <td className="text-right">{loan.tenure ? `${loan.tenure}m` : '-'}</td>
-                  <td className="text-right">{formatCurrency(loan.emiAmount)}</td>
-                  <td className="text-right">{formatCurrency(loan.remainingBalance)}</td>
-                  <td>
+                  <td className="p-3 whitespace-nowrap">{t(LOAN_TYPE_KEYS[loan.loanType] || 'table.type')}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{formatCurrency(loan.amount)}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{loan.interestRate}%</td>
+                  <td className="p-3 text-right whitespace-nowrap">{loan.tenure ? `${loan.tenure}m` : '-'}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{formatCurrency(loan.emiAmount)}</td>
+                  <td className="p-3 text-right whitespace-nowrap">{formatCurrency(loan.remainingBalance)}</td>
+                  <td className="p-3 text-center whitespace-nowrap">
                     <Badge status={loan.status} />
                     {loan.status === 'approved' && !loan.tenure && (
-                      <span className="ml-1 text-xs text-yellow-600">({t('ui.selectTenure')})</span>
+                      <span className="ml-1 text-xs text-yellow-600 whitespace-nowrap">({t('ui.selectTenure')})</span>
                     )}
                   </td>
-                  <td>{formatDate(loan.createdAt)}</td>
-                  <td className="text-right">
-                    <div className="inline-flex flex-wrap gap-1 justify-end">{loanActions(loan)}</div>
+                  <td className="p-3 whitespace-nowrap">{formatDate(loan.createdAt)}</td>
+                  <td className="p-3 text-center whitespace-nowrap">
+                    <div className="inline-flex items-center gap-1 justify-center">
+                      {loanActions(loan)}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -268,12 +229,6 @@ const Loans = () => {
             <input type="number" className="input" placeholder="100000" {...register('amount', { required: t('required'), min: 1000 })} />
             {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>}
           </div>
-          {/* <div>
-            <label className="label">{t('loan.purpose')}</label>
-            <textarea className="input" rows={3} placeholder={t('ui.describePurpose')}
-              {...register('purpose', { required: t('required') })} />
-            {errors.purpose && <p className="text-red-500 text-sm mt-1">{errors.purpose.message}</p>}
-          </div> */}
           <button type="submit" className="btn-primary w-full">{t('ui.submitApplication')}</button>
         </form>
       </Modal>

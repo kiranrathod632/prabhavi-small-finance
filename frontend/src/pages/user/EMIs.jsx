@@ -746,64 +746,64 @@ const EMIs = () => {
       </div>
 
       {/* ================= UPCOMING EMIs (visible on all screens) ================= */}
-      {upcomingEmis.length > 0 && (
-        <div className="px-3 mt-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <span>📅</span> {t('ui.upcomingEmis', 'Upcoming EMIs')}
-              <span className="text-xs font-normal text-slate-400">({upcomingEmis.length})</span>
-            </h3>
+     {upcomingEmis.length > 0 && (
+  <div className="px-3 mt-3">
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-sm sm:text-base font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+        <span>📅</span> {t('ui.upcomingEmis', 'Upcoming EMIs')}
+        <span className="text-xs font-normal text-slate-400">({upcomingEmis.length})</span>
+      </h3>
+    </div>
+    
+    <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[500px] sm:min-w-[600px]">
+          {/* Header */}
+          <div className="grid grid-cols-5 gap-1 px-3 py-2 sm:py-2.5 bg-slate-100 dark:bg-slate-700/50 text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+            <div className="col-span-1 min-w-[80px] sm:min-w-[100px]">LOAN</div>
+            <div className="col-span-1 min-w-[60px] sm:min-w-[70px]">EMI #</div>
+            <div className="col-span-1 text-center min-w-[80px] sm:min-w-[100px]">DUE DATE</div>
+            <div className="col-span-1 text-right min-w-[70px] sm:min-w-[90px]">AMOUNT</div>
+            <div className="col-span-1 text-center min-w-[60px] sm:min-w-[70px]">ACTION</div>
           </div>
           
-          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <div className="min-w-[500px]">
-                {/* Header */}
-                <div className="grid grid-cols-5 gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-[9px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                  <div className="col-span-1 min-w-[80px]">LOAN</div>
-                  <div className="col-span-1 min-w-[60px]">EMI #</div>
-                  <div className="col-span-1 text-center min-w-[80px]">DUE DATE</div>
-                  <div className="col-span-1 text-right min-w-[70px]">AMOUNT</div>
-                  <div className="col-span-1 text-center min-w-[60px]">ACTION</div>
-                </div>
-                
-                {/* Rows */}
-                {upcomingEmis.map(({ loanId, emi, totalPending }) => (
-                  <div 
-                    key={loanId} 
-                    className="grid grid-cols-5 gap-1 px-3 py-2 items-center text-[10px] hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0 bg-white dark:bg-slate-800"
-                  >
-                    <div className="col-span-1 font-medium text-primary-600 dark:text-primary-400 min-w-[80px] flex items-center gap-1">
-                      {loanId}
-                      {totalPending > 1 && (
-                        <span className="text-[9px] text-amber-600 font-bold">+{totalPending-1}</span>
-                      )}
-                    </div>
-                    <div className="col-span-1 text-slate-700 dark:text-slate-300 min-w-[60px]">
-                      {getCleanEmiNumber(emi.emiNumber)}
-                    </div>
-                    <div className="col-span-1 text-center text-slate-500 text-[9px] min-w-[80px]">
-                      {formatDate(emi.dueDate)}
-                    </div>
-                    <div className="col-span-1 text-right font-medium text-slate-700 dark:text-slate-300 min-w-[70px]">
-                      {formatCurrency(emi.amount)}
-                    </div>
-                    <div className="col-span-1 text-center min-w-[60px]">
-                      <button 
-                        type="button" 
-                        onClick={() => openPay(emi)} 
-                        className="btn-primary text-[9px] py-0.5 px-2 rounded whitespace-nowrap"
-                      >
-                        {t('ui.payNow')}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+          {/* Rows */}
+          {upcomingEmis.map(({ loanId, emi, totalPending }) => (
+            <div 
+              key={loanId} 
+              className="grid grid-cols-5 gap-1 px-3 py-2 sm:py-2.5 items-center text-[11px] sm:text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0 bg-white dark:bg-slate-800"
+            >
+              <div className="col-span-1 font-medium text-primary-600 dark:text-primary-400 min-w-[80px] sm:min-w-[100px] flex items-center gap-1">
+                <span className="text-[10px] sm:text-sm truncate">{loanId}</span>
+                {totalPending > 1 && (
+                  <span className="text-[9px] sm:text-[10px] text-amber-600 font-bold">+{totalPending-1}</span>
+                )}
+              </div>
+              <div className="col-span-1 text-slate-700 dark:text-slate-300 min-w-[60px] sm:min-w-[70px] text-[10px] sm:text-sm">
+                {getCleanEmiNumber(emi.emiNumber)}
+              </div>
+              <div className="col-span-1 text-center text-slate-500 text-[9px] sm:text-xs min-w-[80px] sm:min-w-[100px]">
+                {formatDate(emi.dueDate)}
+              </div>
+              <div className="col-span-1 text-right font-medium text-slate-700 dark:text-slate-300 min-w-[70px] sm:min-w-[90px] text-[10px] sm:text-sm">
+                {formatCurrency(emi.amount)}
+              </div>
+              <div className="col-span-1 text-center min-w-[60px] sm:min-w-[70px]">
+                <button 
+                  type="button" 
+                  onClick={() => openPay(emi)} 
+                  className="btn-primary text-[9px] sm:text-xs py-0.5 sm:py-1 px-2 sm:px-3 rounded whitespace-nowrap"
+                >
+                  {t('ui.payNow')}
+                </button>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* ================= MAIN LOAN LIST ================= */}
       {/* MOBILE: Table with columns: #, Loan ID, Amount, Pending Amt, Total EMI, Pending EMI, Actions */}

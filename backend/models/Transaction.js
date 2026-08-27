@@ -26,6 +26,11 @@ const transactionSchema = new mongoose.Schema(
       required: [true, 'Amount is required'],
       min: [0, 'Amount cannot be negative'],
     },
+     processedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+  },
     description: { type: String, default: '' },
     loan: { type: mongoose.Schema.Types.ObjectId, ref: 'Loan' },
     emi: { type: mongoose.Schema.Types.ObjectId, ref: 'EMI' },

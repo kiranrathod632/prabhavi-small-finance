@@ -47,7 +47,7 @@ const Transactions = () => {
   const typeOptions = ['credit', 'debit', 'emi_payment', 'loan_disbursement', 'penalty', 'refund'];
 
   const amountClass = (txn) =>
-    ['credit', 'loan_disbursement', 'refund'].includes(txn.type) ? 'text-green-600' : 'text-red-600';
+    ['credit', 'loan_disbursement', 'refund'].includes(txn.type) ? 'text-emerald-600' : 'text-red-600';
 
   const formatAmount = (txn) => {
     const sign = ['credit', 'loan_disbursement', 'refund'].includes(txn.type) ? '+' : '-';
@@ -56,23 +56,36 @@ const Transactions = () => {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        title={t('transactions')}
-        actions={
-          <button type="button" onClick={handleDownloadPDF} className="btn-secondary">
-            <HiDownload className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" /> {t('ui.downloadPdf')}
-          </button>
-        }
-      />
+      {/* Custom Header with Download Button */}
+      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-slate-800 dark:text-slate-200">{t('transactions')}</h1>
+        <button 
+          type="button" 
+          onClick={handleDownloadPDF} 
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+        >
+          <HiDownload className="w-4 h-4" />
+          <span className="hidden sm:inline">{t('ui.downloadPdf')}</span>
+        </button>
+      </div>
 
-      <div className="filter-bar">
-        <select className="input sm:w-40" value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}>
+      {/* Filters - Side by Side */}
+      <div className="flex flex-wrap items-center gap-2 px-3 py-3 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-700">
+        <select 
+          className="input flex-1 sm:flex-none sm:w-36 text-xs py-1.5 px-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          value={filter} 
+          onChange={(e) => { setFilter(e.target.value); setPage(1); }}
+        >
           <option value="">{t('adminDash.allTime')}</option>
           <option value="today">{t('adminDash.today')}</option>
           <option value="week">{t('adminDash.thisWeek')}</option>
           <option value="month">{t('adminDash.thisMonth')}</option>
         </select>
-        <select className="input sm:w-48" value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
+        <select 
+          className="input flex-1 sm:flex-none sm:w-40 text-xs py-1.5 px-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          value={type} 
+          onChange={(e) => { setType(e.target.value); setPage(1); }}
+        >
           <option value="">{t('adminDash.allTypes')}</option>
           {typeOptions.map((txnType) => (
             <option key={txnType} value={txnType}>{t(`txnType.${txnType}`)}</option>
@@ -80,59 +93,88 @@ const Transactions = () => {
         </select>
       </div>
 
-      <div className="mobile-list">
-        {transactions.map((txn) => (
-          <div key={txn._id} className="mobile-list-item">
-            <div className="mobile-list-head">
-              <div className="min-w-0">
-                <p className="mobile-list-title font-mono text-xs">{txn.transactionId}</p>
-                <p className="mobile-list-meta mt-0.5">{getTransactionTypeLabel(txn.type)}</p>
-              </div>
-              <Badge status={txn.status} />
+      {/* Mobile Scrollable Table View */}
+      <div className="block sm:hidden px-3 mt-3">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
+          <div className="min-w-[700px]">
+            {/* Header */}
+            <div className="grid grid-cols-7 gap-0.5 px-2 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-[8px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+              <div className="col-span-1 text-center min-w-[25px]">#</div>
+              <div className="col-span-1 min-w-[85px]">Txn ID</div>
+              <div className="col-span-1 min-w-[55px]">Type</div>
+              <div className="col-span-1 text-right min-w-[65px]">Amount</div>
+              <div className="col-span-1 text-center min-w-[50px]">Status</div>
+              <div className="col-span-1 text-left min-w-[65px]">Date</div>
+              <div className="col-span-1 text-left min-w-[75px]">Collected By</div>
             </div>
-            <div className="mobile-list-grid">
-              <div className="mobile-list-field">
-                <label>{t('table.amount')}</label>
-                <span className={`font-medium ${amountClass(txn)}`}>{formatAmount(txn)}</span>
+
+            {/* Rows */}
+            {transactions.map((txn, index) => (
+              <div
+                key={txn._id}
+                className="grid grid-cols-7 gap-0.5 px-2 py-1.5 items-center text-[8px] hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 last:border-0"
+              >
+                <div className="col-span-1 text-center text-slate-400 min-w-[25px]">
+                  {((page - 1) * 10) + index + 1}
+                </div>
+                <div className="col-span-1 font-mono text-[8px] text-primary-600 truncate min-w-[85px]">
+                  {txn.transactionId}
+                </div>
+                <div className="col-span-1 text-slate-700 dark:text-slate-300 truncate min-w-[55px]">
+                  {getTransactionTypeLabel(txn.type)}
+                </div>
+                <div className={`col-span-1 text-right font-medium min-w-[65px] ${amountClass(txn)}`}>
+                  {formatAmount(txn)}
+                </div>
+                <div className="col-span-1 text-center min-w-[50px]">
+                  <Badge status={txn.status} size="sm" />
+                </div>
+                <div className="col-span-1 text-slate-500 text-[7px] min-w-[65px]">
+                  {formatDate(txn.createdAt)}
+                </div>
+                <div className="col-span-1 text-slate-500 text-[7px] truncate min-w-[75px]">
+                  {txn.processedBy?.name || t('ui.system')}
+                </div>
               </div>
-              <div className="mobile-list-field col-span-2">
-                <label>{t('table.description')}</label>
-                <span className="text-slate-500">{txn.description}</span>
+            ))}
+            {!transactions.length && (
+              <div className="py-8 text-center">
+                <p className="text-slate-500 text-sm">{t('noData')}</p>
               </div>
-              <div className="mobile-list-field col-span-2">
-                <label>{t('table.date')}</label>
-                <span>{formatDate(txn.createdAt)}</span>
-              </div>
-            </div>
+            )}
           </div>
-        ))}
-        {!transactions.length && (
-          <p className="py-8 text-center text-[12px] text-slate-500">{t('noData')}</p>
-        )}
+        </div>
       </div>
 
-      <div className="card desktop-table">
-        <div className="data-table-wrap">
-          <table className="data-table">
+      {/* Desktop Table View */}
+      <div className="card desktop-table overflow-hidden hidden sm:block mx-3 mt-3">
+        <div className="overflow-x-auto">
+          <table className="data-table w-full text-sm">
             <thead>
-              <tr>
-                <th>{t('table.id')}</th>
-                <th>{t('table.type')}</th>
-                <th className="text-right">{t('table.amount')}</th>
-                <th>{t('table.description')}</th>
-                <th>{t('table.date')}</th>
-                <th>{t('table.status')}</th>
+              <tr className="border-b dark:border-gray-700 bg-slate-50 dark:bg-slate-800">
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">#</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.id')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.type')}</th>
+                <th className="p-3 text-right text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.amount')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.description')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.date')}</th>
+                <th className="p-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">{t('table.status')}</th>
+                <th className="p-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">Collected By</th>
               </tr>
             </thead>
             <tbody>
-              {transactions.map((txn) => (
-                <tr key={txn._id}>
-                  <td className="font-mono text-xs">{txn.transactionId}</td>
-                  <td>{getTransactionTypeLabel(txn.type)}</td>
-                  <td className={`text-right font-medium ${amountClass(txn)}`}>{formatAmount(txn)}</td>
-                  <td className="text-slate-500">{txn.description}</td>
-                  <td>{formatDate(txn.createdAt)}</td>
-                  <td><Badge status={txn.status} /></td>
+              {transactions.map((txn, index) => (
+                <tr key={txn._id} className="border-b dark:border-gray-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <td className="p-3 text-slate-500 whitespace-nowrap">{((page - 1) * 10) + index + 1}</td>
+                  <td className="p-3 font-mono text-xs whitespace-nowrap">{txn.transactionId}</td>
+                  <td className="p-3 whitespace-nowrap">{getTransactionTypeLabel(txn.type)}</td>
+                  <td className={`p-3 text-right font-medium whitespace-nowrap ${amountClass(txn)}`}>{formatAmount(txn)}</td>
+                  <td className="p-3 text-slate-500 truncate max-w-[200px]">{txn.description || '-'}</td>
+                  <td className="p-3 whitespace-nowrap">{formatDate(txn.createdAt)}</td>
+                  <td className="p-3 text-center whitespace-nowrap"><Badge status={txn.status} /></td>
+                  <td className="p-3 whitespace-nowrap">
+                    {txn.processedBy?.name || t('ui.system')}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -73,6 +73,7 @@ export const getTransactions = asyncHandler(async (req, res) => {
     Transaction.find(filter)
       .populate('user', 'name email')
       .populate('loan', 'loanId')
+      .populate('processedBy', 'name') 
       .sort(sort)
       .skip(skip)
       .limit(limit),
@@ -89,7 +90,8 @@ export const getTransaction = asyncHandler(async (req, res) => {
   const transaction = await Transaction.findById(req.params.id)
     .populate('user', 'name email')
     .populate('loan', 'loanId loanType')
-    .populate('emi');
+    .populate('emi')
+     .populate('processedBy', 'name email');
 
   if (!transaction) return sendError(res, 404, 'Transaction not found');
   sendResponse(res, 200, 'Transaction fetched', transaction);
