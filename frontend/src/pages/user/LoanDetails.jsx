@@ -175,4 +175,5 @@ const LoanDetails = () => {
   );
 };
 
+
 export default LoanDetails;
