@@ -260,64 +260,157 @@ const AdminPurchases = () => {
           onClose={() => setShowModal(false)}
           title={t('adminPurchases.add') || 'Add Purchase'}
         >
-          <form onSubmit={handleCreate} className="space-y-3">
-            <div>
-              <label className="label">{t('adminPurchases.item') || 'What was purchased'}</label>
-              <input
-                className="input"
-                value={form.itemName}
-                onChange={(e) => setForm((f) => ({ ...f, itemName: e.target.value }))}
-                placeholder="e.g. Office stationery"
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t('table.amount')}</label>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                className="input"
-                value={form.amount}
-                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t('adminPurchases.date') || 'Purchase date'}</label>
-              <input
-                type="date"
-                className="input"
-                value={form.purchaseDate}
-                onChange={(e) => setForm((f) => ({ ...f, purchaseDate: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t('table.description')}</label>
-              <textarea
-                className="input min-h-[72px]"
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Optional details"
-              />
-            </div>
-            <div>
-              <label className="label">{t('adminPurchases.billPhoto') || 'Bill photo'}</label>
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                className="input"
-                onChange={(e) => setForm((f) => ({ ...f, billPhoto: e.target.files?.[0] || null }))}
-              />
-            </div>
-            <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-              {t('adminPurchases.pendingNote') || 'Amount is deducted from company fund only after Super Admin approval.'}
-            </p>
-            <button type="submit" className="btn-primary w-full" disabled={submitting}>
-              {submitting ? (t('loading') || 'Submitting...') : (t('adminPurchases.submit') || 'Submit for Approval')}
-            </button>
-          </form>
+          <form onSubmit={handleCreate} className="space-y-3.5 max-h-[70vh] overflow-y-auto px-0.5 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+  {/* Custom scrollbar styles - add to your CSS */}
+  <style>{`
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 4px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 10px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+  `}</style>
+
+  {/* Item Name */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">
+      {t('adminPurchases.item') || 'What was purchased'}
+      <span className="text-red-500 ml-0.5">*</span>
+    </label>
+    <div className="relative">
+      <input
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white"
+        value={form.itemName}
+        onChange={(e) => setForm((f) => ({ ...f, itemName: e.target.value }))}
+        placeholder="e.g. Office stationery"
+        required
+      />
+    </div>
+  </div>
+
+  {/* Amount */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">
+      {t('table.amount')}
+      <span className="text-red-500 ml-0.5">*</span>
+    </label>
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm"></span>
+      <input
+        type="number"
+        min="0.01"
+        step="0.01"
+        className="w-full px-3 py-2 pl-7 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white"
+        value={form.amount}
+        onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+        placeholder="0.00"
+        required
+      />
+    </div>
+  </div>
+
+  {/* Purchase Date */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">
+      {t('adminPurchases.date') || 'Purchase date'}
+      <span className="text-red-500 ml-0.5">*</span>
+    </label>
+    <input
+      type="date"
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white"
+      value={form.purchaseDate}
+      onChange={(e) => setForm((f) => ({ ...f, purchaseDate: e.target.value }))}
+      required
+    />
+  </div>
+
+  {/* Description */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">
+      {t('table.description')}
+      <span className="text-gray-400 text-[10px] font-normal ml-1">(optional)</span>
+    </label>
+    <textarea
+      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-gray-50 hover:bg-white min-h-[60px] resize-y"
+      value={form.description}
+      onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+      placeholder="Optional details"
+    />
+  </div>
+
+  {/* Bill Photo Upload */}
+  <div>
+    <label className="block text-xs font-medium text-gray-700 mb-1">
+      {t('adminPurchases.billPhoto') || 'Bill photo'}
+      <span className="text-gray-400 text-[10px] font-normal ml-1">(optional)</span>
+    </label>
+    <div className="relative border-2 border-dashed border-gray-200 rounded-lg hover:border-blue-400 transition-all bg-gray-50 hover:bg-blue-50/20 cursor-pointer">
+      <input
+        type="file"
+        accept="image/*,.pdf"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        onChange={(e) => setForm((f) => ({ ...f, billPhoto: e.target.files?.[0] || null }))}
+      />
+      <div className="flex items-center gap-3 py-2.5 px-3">
+        <div className="flex-shrink-0">
+          <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-gray-600 truncate">
+            {form.billPhoto ? form.billPhoto.name : 'Click to upload bill photo'}
+          </p>
+          {!form.billPhoto && (
+            <p className="text-[10px] text-gray-400">JPG, PNG, PDF</p>
+          )}
+        </div>
+        {form.billPhoto && (
+          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+            {(form.billPhoto.size / 1024).toFixed(0)} KB
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+
+  {/* Info Note */}
+  <div className="bg-blue-50/70 rounded-lg p-2.5 border border-blue-100/50">
+    <div className="flex items-start gap-2">
+      <span className="text-sm flex-shrink-0">💡</span>
+      <p className="text-[11px] text-gray-600 leading-relaxed">
+        {t('adminPurchases.pendingNote') || 'Amount is deducted from company fund only after Super Admin approval.'}
+      </p>
+    </div>
+  </div>
+
+  {/* Submit Button */}
+  <button 
+    type="submit" 
+    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+    disabled={submitting}
+  >
+    {submitting ? (
+      <>
+        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {t('loading') || 'Submitting...'}
+      </>
+    ) : (
+      t('adminPurchases.submit') || 'Submit for Approval'
+    )}
+  </button>
+</form>
         </Modal>
       )}
     </div>

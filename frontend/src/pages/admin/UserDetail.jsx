@@ -362,13 +362,13 @@ const UserDetail = () => {
             </select>
           </div>
           <div>
-            <label className="label">{t('adminEmis.referenceNumber')}</label>
-            <input
+            {/* <label className="label">{t('adminEmis.referenceNumber')}</label> */}
+            {/* <input
               className="input"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
               placeholder={t('adminEmis.referencePlaceholder')}
-            />
+            /> */}
           </div>
           <button type="button" onClick={handleCollect} className="btn-success w-full">
             {t('adminEmis.confirmCollection')}

@@ -340,7 +340,7 @@ const AdminEMIs = () => {
           </div>
           <div>
             <label className="label">{t('adminEmis.referenceNumber')}</label>
-            <input className="input" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} placeholder={t('adminEmis.referencePlaceholder')} />
+            {/* <input className="input" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} placeholder={t('adminEmis.referencePlaceholder')} /> */}
           </div>
           <button onClick={handleCollect} className="btn-success w-full">{t('adminEmis.confirmCollection')}</button>
         </div>
