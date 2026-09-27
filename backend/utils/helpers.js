@@ -28,16 +28,22 @@ export const calculateEMI = (principal, annualRate, tenureMonths) => {
 };
 
 /**
- * Calculate EMI using flat interest method
+ * Calculate EMI using flat interest (always monthly %).
+ * Example: ₹25,000 × 2.5% × 12 = ₹7,500 → raw EMI ₹2,708.33 → rounded ₹2,710
+ * totalPayable = 2,710 × 12 = ₹32,520
  */
-export const calculateFlatEMI = (principal, annualRate, tenureMonths) => {
-  const totalInterest = (principal * annualRate * tenureMonths) / (12 * 100);
-  const totalPayable = principal + totalInterest;
-  const emi = totalPayable / tenureMonths;
+export const calculateFlatEMI = (principal, monthlyRate, tenureMonths) => {
+  const rawInterest = (principal * monthlyRate * tenureMonths) / 100;
+  const rawEmi = (principal + rawInterest) / tenureMonths;
+  // Round EMI to nearest ₹10 so 2708.33 → 2710 (matches business expectation)
+  const emi = Math.round(rawEmi / 10) * 10;
+  const totalPayable = Math.round(emi * tenureMonths * 100) / 100;
+  // Interest based on loan principal (not net disbursed) for flat
+  const totalInterest = Math.round((totalPayable - principal) * 100) / 100;
   return {
-    emi: Math.round(emi * 100) / 100,
-    totalInterest: Math.round(totalInterest * 100) / 100,
-    totalPayable: Math.round(totalPayable * 100) / 100,
+    emi,
+    totalInterest,
+    totalPayable,
   };
 };
 
@@ -71,25 +77,37 @@ export const calculateProcessingFee = (loanAmount, settings) => {
 };
 
 /**
- * Calculate full loan EMI plan with amortization
+ * Calculate full loan EMI plan with amortization.
+ * Flat interest always uses monthly rate (no yearly/monthly choice).
+ * Example: ₹25,000 @ 2.5% flat × 12 → EMI ₹2,710, payable ₹32,520
  */
 export const calculateLoanPlan = ({
   principal,
   annualRate,
   tenureMonths,
   interestType = 'reducing_balance',
+  ratePeriod = 'yearly',
   startDate = new Date(),
+  netDisbursed = null,
 }) => {
+  // Flat is always monthly; reducing still respects ratePeriod
+  const flatRatePeriod = 'monthly';
+  const effectiveAnnualRate = normalizeAnnualRate(
+    annualRate,
+    interestType === 'flat' ? flatRatePeriod : ratePeriod
+  );
   const schedule = [];
   let emiAmount = 0;
   let totalInterest = 0;
   let totalPayable = 0;
 
   if (interestType === 'flat') {
+    // Interest on PRINCIPAL (25,000), not net disbursed (23,900)
     const flat = calculateFlatEMI(principal, annualRate, tenureMonths);
-    emiAmount = flat.emi;
-    totalInterest = flat.totalInterest;
-    totalPayable = flat.totalPayable;
+    emiAmount = flat.emi;              // 2710
+    totalPayable = flat.totalPayable;  // 32520
+    totalInterest = flat.totalInterest; // 7520
+
     let balance = principal;
     const monthlyPrincipal = principal / tenureMonths;
     const monthlyInterest = totalInterest / tenureMonths;
@@ -109,10 +127,10 @@ export const calculateLoanPlan = ({
       });
     }
   } else {
-    emiAmount = calculateEMI(principal, annualRate, tenureMonths);
+    emiAmount = calculateEMI(principal, effectiveAnnualRate, tenureMonths);
     totalPayable = calculateTotalPayable(emiAmount, tenureMonths);
     totalInterest = Math.round((totalPayable - principal) * 100) / 100;
-    const monthlyRate = annualRate / 12 / 100;
+    const monthlyRate = effectiveAnnualRate / 12 / 100;
     let balance = principal;
 
     for (let i = 1; i <= tenureMonths; i++) {
@@ -139,14 +157,29 @@ export const calculateLoanPlan = ({
     totalPayable,
     totalOutstanding: totalPayable,
     schedule,
+    netDisbursed,
   };
 };
 
 /**
  * Generate EMI schedule (backward compatible wrapper)
  */
-export const generateEMISchedule = (principal, annualRate, tenureMonths, startDate, interestType = 'reducing_balance') => {
-  return calculateLoanPlan({ principal, annualRate, tenureMonths, interestType, startDate }).schedule;
+export const generateEMISchedule = (
+  principal,
+  annualRate,
+  tenureMonths,
+  startDate,
+  interestType = 'reducing_balance',
+  ratePeriod = 'yearly'
+) => {
+  return calculateLoanPlan({
+    principal,
+    annualRate,
+    tenureMonths,
+    interestType,
+    ratePeriod,
+    startDate,
+  }).schedule;
 };
 
 /**

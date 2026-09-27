@@ -29,135 +29,6 @@ import { hasRequiredKycDocuments } from '../utils/kycHelpers.js';
 /**
  * @route   POST /api/loans
  */
-// controllers/loanController.js
-// export const createLoan = asyncHandler(async (req, res) => {
-//   const { loanType, amount, purpose, status: reqStatus } = req.body;
-//   const userId = isStaffRole(req.user.role) && req.body.userId ? req.body.userId : req.user._id;
-
-//   const loanUser = await User.findById(userId);
-//   if (!loanUser) return sendError(res, 404, 'User not found');
-
-//   // End-users must finish profile setup + KYC docs before applying
-//   if (loanUser.role === ROLES.USER || loanUser.role === 'user') {
-//     if (loanUser.profileSetupComplete === false) {
-//       return sendError(res, 400, 'Please complete your profile before applying for a loan');
-//     }
-
-//     const profile = await Profile.findOne({ user: userId });
-//     const kycOk = loanUser.kycCompleted === true || hasRequiredKycDocuments(profile);
-//     if (!kycOk) {
-//       return sendError(
-//         res,
-//         400,
-//         'Please complete KYC by uploading Aadhaar card, PAN card, and bank photo before applying for a loan'
-//       );
-//     }
-
-//     // Keep User flag in sync if docs exist but flag was stale
-//     if (!loanUser.kycCompleted && kycOk) {
-//       loanUser.kycCompleted = true;
-//       await loanUser.save();
-//     }
-//   }
-
-//   const settings = await getSettings();
-//   if (amount < settings.minLoanAmount || amount > settings.maxLoanAmount) {
-//     return sendError(res, 400, `Loan amount must be between ₹${settings.minLoanAmount} and ₹${settings.maxLoanAmount}`);
-//   }
-
-//   const interestRate = req.body.interestRate || await getInterestRateForLoanType(loanType);
-//   const initialStatus = reqStatus === 'draft' ? 'draft' : 'pending';
-
-//   // ✅ Define adminId
-//   const adminId = loanUser.adminId || null;
-
-//   const loan = await Loan.create({
-//     user: userId,
-//     adminId: adminId,
-//     loanType,
-//     amount,
-//     interestRate,
-//     interestType: settings.interestType,
-//     interestRatePeriod: settings.interestRatePeriod,
-//     // purpose,
-//     status: initialStatus,
-//   });
-
-//   if (initialStatus === 'pending') {
-//     await addTimelineEvent({
-//       loan, 
-//       user: userId, 
-//       status: 'pending',
-//       title: 'Application Submitted',
-//       description: `Loan application for ₹${amount} submitted`,
-//       performedBy: req.user._id,
-//     });
-
-//     await notifyLoanUpdate(userId, loan, 'pending');
-//     const applicantMobile = loanUser.mobile_number || loanUser.mobile;
-//     if (applicantMobile) {
-//       await sendLoanStatusSms(applicantMobile, loan.loanId, 'pending');
-//     }
-
-//     // Notify assigned admin (SMS + in-app + push) with account details
-//     const recipientIds = new Set();
-//     if (loanUser.adminId) recipientIds.add(loanUser.adminId.toString());
-
-//     // Also keep super admins informed (existing coverage)
-//     const superAdmins = await User.find({
-//       role: ROLES.SUPER_ADMIN,
-//       isActive: true,
-//       isDeleted: { $ne: true },
-//     }).select('_id');
-//     superAdmins.forEach((sa) => recipientIds.add(sa._id.toString()));
-
-//     if (recipientIds.size) {
-//       const staffRecipients = await User.find({
-//         _id: { $in: [...recipientIds] },
-//         isActive: true,
-//         isDeleted: { $ne: true },
-//       }).select('_id mobile_number mobile role');
-
-//       const accountLabel = loanUser.mobile_number || loanUser.mobile || loanUser.email || 'N/A';
-//       for (const staff of staffRecipients) {
-//         await createNotification({
-//           user: staff._id,
-//           title: 'New Loan Application',
-//           message: `${loanUser.name} (Account: ${accountLabel}) applied for a loan of ₹${amount}. Loan ID: ${loan.loanId}.`,
-//           type: 'info',
-//           link: staff.role === ROLES.SUPER_ADMIN
-//             ? `/super-admin/loans`
-//             : `/admin/loans`,
-//           metadata: {
-//             loanId: loan.loanId,
-//             userId: loanUser._id.toString(),
-//             amount: String(amount),
-//           },
-//         });
-
-//         const adminMobile = staff.mobile_number || staff.mobile;
-//         if (adminMobile) {
-//           await sendLoanApplicationAdminSms({
-//             adminMobile,
-//             user: loanUser,
-//             loan,
-//           });
-//         }
-//       }
-//     }
-//   }
-
-//   await createAuditLog({
-//     user: req.user._id,
-//     action: `Loan application submitted: ${loan.loanId}`,
-//     entity: 'loan',
-//     entityId: loan._id,
-//     ipAddress: req.ip,
-//   });
-
-//   sendResponse(res, 201, 'Loan application submitted', loan);
-// });
-
 export const createLoan = asyncHandler(async (req, res) => {
   const { loanType, amount, purpose, status: reqStatus } = req.body;
   const userId = isStaffRole(req.user.role) && req.body.userId ? req.body.userId : req.user._id;
@@ -176,8 +47,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     const lastLoanDate = existingPendingLoan.createdAt;
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate - lastLoanDate) / (1000 * 60 * 60 * 24));
-    
-    // ✅ Allow if more than 8 days have passed
+
     if (daysDifference < 8) {
       const remainingDays = 8 - daysDifference;
       return sendResponse(
@@ -205,7 +75,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     const lastLoanDate = existingActiveLoan.createdAt;
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate - lastLoanDate) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDifference < 8) {
       const remainingDays = 8 - daysDifference;
       return sendResponse(
@@ -227,7 +97,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     user: userId,
     status: 'closed',
     isDeleted: { $ne: true },
-    closedAt: { 
+    closedAt: {
       $gte: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
     }
   });
@@ -236,7 +106,7 @@ export const createLoan = asyncHandler(async (req, res) => {
     const closedDate = recentlyClosedLoan.closedAt;
     const currentDate = new Date();
     const daysDifference = Math.floor((currentDate - closedDate) / (1000 * 60 * 60 * 24));
-    
+
     if (daysDifference < 8) {
       const remainingDays = 8 - daysDifference;
       return sendResponse(
@@ -253,22 +123,22 @@ export const createLoan = asyncHandler(async (req, res) => {
     }
   }
 
-  // ✅ Check for duplicate loan application (same amount, same type within last 5 minutes)
+  // ✅ Check for duplicate loan application
   const duplicateLoan = await Loan.findOne({
     user: userId,
     status: { $in: ['pending', 'under_review', 'approved'] },
     amount: amount,
     loanType: loanType,
     isDeleted: { $ne: true },
-    createdAt: { 
+    createdAt: {
       $gte: new Date(Date.now() - 5 * 60 * 1000)
     }
   });
 
   if (duplicateLoan) {
     return sendResponse(
-      res, 
-      200, 
+      res,
+      200,
       'You have already submitted a loan application. Please wait for it to be processed.',
       {
         loan: duplicateLoan,
@@ -293,7 +163,6 @@ export const createLoan = asyncHandler(async (req, res) => {
       );
     }
 
-    // Keep User flag in sync if docs exist but flag was stale
     if (!loanUser.kycCompleted && kycOk) {
       loanUser.kycCompleted = true;
       await loanUser.save();
@@ -308,7 +177,6 @@ export const createLoan = asyncHandler(async (req, res) => {
   const interestRate = req.body.interestRate || await getInterestRateForLoanType(loanType);
   const initialStatus = reqStatus === 'draft' ? 'draft' : 'pending';
 
-  // ✅ Define adminId
   const adminId = loanUser.adminId || null;
 
   // ✅ Generate unique loanId with retry mechanism
@@ -316,13 +184,12 @@ export const createLoan = asyncHandler(async (req, res) => {
   let isUnique = false;
   let attempts = 0;
   const maxAttempts = 5;
-  
+
   while (!isUnique && attempts < maxAttempts) {
-    // Get the latest loan to generate next number
     const lastLoan = await Loan.findOne({ isDeleted: { $ne: true } })
       .sort({ createdAt: -1 })
       .select('loanId');
-    
+
     let nextNumber = 1;
     if (lastLoan && lastLoan.loanId) {
       const match = lastLoan.loanId.match(/LN(\d+)/);
@@ -330,10 +197,9 @@ export const createLoan = asyncHandler(async (req, res) => {
         nextNumber = parseInt(match[1]) + 1;
       }
     }
-    
+
     loanId = `LN${String(nextNumber).padStart(6, '0')}`;
-    
-    // Check if this loanId already exists
+
     const existingLoan = await Loan.findOne({ loanId, isDeleted: { $ne: true } });
     if (!existingLoan) {
       isUnique = true;
@@ -342,7 +208,6 @@ export const createLoan = asyncHandler(async (req, res) => {
   }
 
   if (!isUnique) {
-    // Fallback: use timestamp based unique ID
     loanId = `LN${Date.now().toString().slice(-6)}`;
   }
 
@@ -354,15 +219,14 @@ export const createLoan = asyncHandler(async (req, res) => {
     interestRate,
     interestType: settings.interestType,
     interestRatePeriod: settings.interestRatePeriod,
-    // purpose,
     status: initialStatus,
-    loanId: loanId, // Explicitly set the generated loanId
+    loanId: loanId,
   });
 
   if (initialStatus === 'pending') {
     await addTimelineEvent({
-      loan, 
-      user: userId, 
+      loan,
+      user: userId,
       status: 'pending',
       title: 'Application Submitted',
       description: `Loan application for ₹${amount} submitted`,
@@ -375,11 +239,9 @@ export const createLoan = asyncHandler(async (req, res) => {
       await sendLoanStatusSms(applicantMobile, loan.loanId, 'pending');
     }
 
-    // Notify assigned admin (SMS + in-app + push) with account details
     const recipientIds = new Set();
     if (loanUser.adminId) recipientIds.add(loanUser.adminId.toString());
 
-    // Also keep super admins informed (existing coverage)
     const superAdmins = await User.find({
       role: ROLES.SUPER_ADMIN,
       isActive: true,
@@ -441,7 +303,6 @@ export const getLoans = asyncHandler(async (req, res) => {
   const { page, limit, skip } = paginate(req.query.page, req.query.limit);
   const { status, loanType, search, sort = '-createdAt' } = req.query;
 
-  // Heal orphan loans that belong to a user with an adminId
   if (isStaffRole(req.user.role)) {
     await backfillLoanAdminIds(Loan);
   }
@@ -513,96 +374,6 @@ export const getLoan = asyncHandler(async (req, res) => {
 /**
  * @route   PUT /api/loans/:id
  */
-// export const updateLoan = asyncHandler(async (req, res) => {
-//   const loan = await Loan.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-//   if (!loan) return sendError(res, 404, 'Loan not found');
-
-//   const { status, interestRate, processingFee, gstAmount, rejectedReason, remarks, approvedAmount, tenure, emiStartDate, dueDate } = req.body;
-//   const staff = isStaffRole(req.user.role);
-
-//   if (staff && req.user.role !== ROLES.SUPER_ADMIN && loan.adminId && !canAccessAdminScope(req.user, loan.adminId)) {
-//     return sendError(res, 403, 'Not authorized');
-//   }
-
-//   if (status === 'under_review' && staff) {
-//     loan.status = 'under_review';
-//     loan.reviewedBy = req.user._id;
-//     loan.reviewedAt = new Date();
-//     await addTimelineEvent({ loan, user: loan.user, status, performedBy: req.user._id });
-//   } else if (status === 'approved' && staff) {
-//     loan.status = 'approved';
-//     loan.approvedBy = req.user._id;
-//     loan.approvedAt = new Date();
-//     if (interestRate) loan.interestRate = interestRate;
-//     if (approvedAmount) loan.approvedAmount = Number(approvedAmount);
-//     if (tenure) loan.tenure = Number(tenure);
-//     if (emiStartDate) loan.emiStartDate = new Date(emiStartDate);
-//     if (dueDate) loan.dueDate = new Date(dueDate);
-//     if (processingFee !== undefined && processingFee !== null) {
-//       loan.processingFee = Number(processingFee) || 0;
-//     }
-//     if (gstAmount !== undefined && gstAmount !== null) {
-//       loan.gstAmount = Number(gstAmount) || 0;
-//     }
-//     const baseAmount = loan.approvedAmount || loan.amount;
-//     loan.netDisbursedAmount = Math.max(0, baseAmount - (loan.processingFee || 0) - (loan.gstAmount || 0));
-//     await addTimelineEvent({ loan, user: loan.user, status, performedBy: req.user._id });
-//     await loan.save();
-//     await createCommissionForLoan(loan);
-//   } else if (status === 'rejected' && staff) {
-//     loan.status = 'rejected';
-//     loan.rejectedReason = rejectedReason || 'Application rejected';
-//     loan.rejectedBy = req.user._id;
-//     loan.rejectedAt = new Date();
-//     await addTimelineEvent({ loan, user: loan.user, status, description: rejectedReason, performedBy: req.user._id });
-//   } else if (status === 'disbursed' && staff) {
-//     try {
-//       await disburseLoan(loan, req.user._id);
-//     } catch (err) {
-//       return sendError(res, 400, err.message);
-//     }
-//   } else if (status === 'closed' && staff) {
-//     loan.status = 'closed';
-//     loan.closedAt = new Date();
-//     await addTimelineEvent({ loan, user: loan.user, status: 'closed', performedBy: req.user._id });
-//     await loan.save();
-//   } else if (status === 'cancelled' && staff) {
-//     loan.status = 'cancelled';
-//     loan.cancelledAt = new Date();
-//     loan.cancelledReason = rejectedReason || 'Cancelled';
-//     await addTimelineEvent({ loan, user: loan.user, status: 'cancelled', performedBy: req.user._id });
-//     await loan.save();
-//   } else if (interestRate && staff) {
-//     loan.interestRate = interestRate;
-//     await loan.save();
-//   }
-
-//   if (remarks) { loan.remarks = remarks; await loan.save(); }
-
-//   if (status && status !== 'disbursed') {
-//     await notifyLoanUpdate(loan.user, loan, status);
-//     const user = await User.findById(loan.user);
-//     if (user?.email) await sendLoanStatusEmail(user, loan, status);
-//     if (user?.mobile) await sendLoanStatusSms(user.mobile, loan.loanId, status);
-//   }
-
-//   await createAuditLog({
-//     user: req.user._id,
-//     action: `Loan updated: ${loan.loanId} - ${status || 'details'}`,
-//     entity: 'loan',
-//     entityId: loan._id,
-//     details: req.body,
-//     ipAddress: req.ip,
-//   });
-
-//   const updated = await Loan.findById(loan._id);
-//   sendResponse(res, 200, 'Loan updated', updated);
-// });
-
-// controllers/loanController.js - updateLoan function
-
-// controllers/loanController.js - updateLoan function
-
 export const updateLoan = asyncHandler(async (req, res) => {
   const loan = await Loan.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!loan) return sendError(res, 404, 'Loan not found');
@@ -639,7 +410,7 @@ export const updateLoan = asyncHandler(async (req, res) => {
     loan.reviewedAt = new Date();
     await addTimelineEvent({ loan, user: loan.user, status, performedBy: req.user._id });
     await loan.save();
-    
+
   } else if (status === 'approved' && staff) {
     // Idempotent: only pending / under_review loans can be approved once
     if (!['pending', 'under_review'].includes(loan.status)) {
@@ -678,7 +449,7 @@ export const updateLoan = asyncHandler(async (req, res) => {
     if (tenure) freshLoan.tenure = Number(tenure);
     if (emiStartDate) freshLoan.emiStartDate = new Date(emiStartDate);
     if (dueDate) freshLoan.dueDate = new Date(dueDate);
-    
+
     // 2. Processing fee & GST
     if (processingFee !== undefined && processingFee !== null) {
       freshLoan.processingFee = Number(processingFee) || 0;
@@ -686,21 +457,24 @@ export const updateLoan = asyncHandler(async (req, res) => {
     if (gstAmount !== undefined && gstAmount !== null) {
       freshLoan.gstAmount = Number(gstAmount) || 0;
     }
-    
+
     // 3. Calculate net disbursed amount
     const baseAmount = freshLoan.approvedAmount || freshLoan.amount;
     const netDisbursed = Math.max(0, baseAmount - (freshLoan.processingFee || 0) - (freshLoan.gstAmount || 0));
     freshLoan.netDisbursedAmount = netDisbursed;
     freshLoan.disbursedAmount = netDisbursed;
-    
-    // 4. Calculate EMI if tenure is provided (supports flat + reducing)
-    // interestRate is treated as annual % — same as previous calculateEMI behavior
+
+    // 4. Calculate EMI (flat uses monthly rate, reducing uses ratePeriod)
     if (freshLoan.tenure && freshLoan.interestRate) {
       const plan = calculateLoanPlan({
         principal: freshLoan.amount,
         annualRate: freshLoan.interestRate,
         tenureMonths: freshLoan.tenure,
         interestType: freshLoan.interestType || 'reducing_balance',
+        ratePeriod: freshLoan.interestType === 'flat'
+          ? 'monthly'
+          : (freshLoan.interestRatePeriod || 'yearly'),
+        netDisbursed,
       });
       freshLoan.emiAmount = plan.emiAmount;
       freshLoan.totalPayable = plan.totalPayable;
@@ -709,76 +483,73 @@ export const updateLoan = asyncHandler(async (req, res) => {
       freshLoan.remainingBalance = plan.totalPayable;
       freshLoan.totalOutstanding = plan.totalPayable;
     }
-    
+
     // 5. Set loan as active/disbursed
     freshLoan.status = 'active';
     freshLoan.disbursedAt = new Date();
     freshLoan.disbursedBy = req.user._id;
     freshLoan.startDate = new Date();
     freshLoan.processingFeeDeductedAt = new Date();
-    
-    // Set end date
+
     if (freshLoan.tenure) {
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + freshLoan.tenure);
       freshLoan.endDate = endDate;
     }
-    
+
     // 6. Save loan first
     await freshLoan.save();
-    
-    // 7. ✅ UPDATE FUND - Deduct disbursed amount from fund
+
+    // 7. UPDATE FUND
     try {
       await updateFundForDisbursement(freshLoan, req.user._id, netDisbursed);
     } catch (error) {
-      // Revert loan status if fund update fails
       freshLoan.status = 'approved';
       await freshLoan.save();
       return sendError(res, 400, error.message);
     }
-    
-    // 8. ✅ CREDIT USER WALLET - Add net disbursed amount to user's wallet
+
+    // 8. CREDIT USER WALLET
     try {
       await creditUserWallet(freshLoan, netDisbursed, req.user._id);
     } catch (error) {
-      // Log error but don't fail the whole process
       console.error('Failed to credit wallet:', error);
     }
-    
+
     // 9. Generate EMIs
     if (freshLoan.tenure && freshLoan.emiAmount) {
       await generateEMIs(freshLoan);
     }
-    
-    // 10. Add timeline events
-    await addTimelineEvent({ 
-      loan: freshLoan, 
-      user: freshLoan.user, 
-      status: 'approved', 
+
+    // 10. Timeline events
+    await addTimelineEvent({
+      loan: freshLoan,
+      user: freshLoan.user,
+      status: 'approved',
       title: 'Loan Approved & Disbursed',
       description: `Loan approved for ₹${baseAmount}. Net disbursed: ₹${netDisbursed} credited to wallet`,
-      performedBy: req.user._id 
+      performedBy: req.user._id
     });
-    
-    await addTimelineEvent({ 
-      loan: freshLoan, 
-      user: freshLoan.user, 
-      status: 'active', 
+
+    await addTimelineEvent({
+      loan: freshLoan,
+      user: freshLoan.user,
+      status: 'active',
       title: 'Loan Active',
       description: `EMI of ₹${freshLoan.emiAmount || 0} for ${freshLoan.tenure || 0} months`,
-      performedBy: req.user._id 
+      performedBy: req.user._id
     });
-    
-    // 11. Create commission
+
+    // 11. Commission
     await createCommissionForLoan(freshLoan);
-    
-    // 12. Send notifications
+
+    // 12. Notifications
     await notifyLoanUpdate(freshLoan.user, freshLoan, 'active');
     const user = await User.findById(freshLoan.user);
     const userMobile = user?.mobile_number || user?.mobile;
     if (user?.email) await sendLoanStatusEmail(user, freshLoan, 'active');
     if (userMobile) await sendLoanStatusSms(userMobile, freshLoan.loanId, 'approved');
-    
+
     await createNotification({
       user: freshLoan.user,
       title: 'Loan Approved & Disbursed',
@@ -786,7 +557,7 @@ export const updateLoan = asyncHandler(async (req, res) => {
       type: 'loan',
       link: `/loans/${freshLoan._id}`,
     });
-    
+
   } else if (status === 'rejected' && staff) {
     loan.status = 'rejected';
     loan.rejectedReason = rejectedReason || 'Application rejected';
@@ -794,20 +565,20 @@ export const updateLoan = asyncHandler(async (req, res) => {
     loan.rejectedAt = new Date();
     await addTimelineEvent({ loan, user: loan.user, status, description: rejectedReason, performedBy: req.user._id });
     await loan.save();
-    
+
   } else if (status === 'closed' && staff) {
     loan.status = 'closed';
     loan.closedAt = new Date();
     await addTimelineEvent({ loan, user: loan.user, status: 'closed', performedBy: req.user._id });
     await loan.save();
-    
+
   } else if (status === 'cancelled' && staff) {
     loan.status = 'cancelled';
     loan.cancelledAt = new Date();
     loan.cancelledReason = rejectedReason || 'Cancelled';
     await addTimelineEvent({ loan, user: loan.user, status: 'cancelled', performedBy: req.user._id });
     await loan.save();
-    
+
   } else if (interestRate && staff) {
     loan.interestRate = parseFloat(interestRate);
     await loan.save();
@@ -842,12 +613,10 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
     });
   }
 
-  // Check if enough funds available
   if (fund.availableFund < loan.amount) {
     throw new Error(`Insufficient funds. Available: ₹${fund.availableFund}, Required: ₹${loan.amount}`);
   }
 
-  // Update fund
   fund.availableFund = Math.max(0, fund.availableFund - loan.amount);
   fund.companyFund = Math.max(0, fund.companyFund - loan.amount);
   fund.loanDistributed = (fund.loanDistributed || 0) + loan.amount;
@@ -855,7 +624,6 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
   fund.profit = (fund.profit || 0) + (loan.processingFee || 0);
   fund.lastUpdated = new Date();
 
-  // Add history entries
   fund.history.push({
     type: 'loan_disbursement',
     amount: loan.amount,
@@ -874,8 +642,6 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
 
   await fund.save();
 
-  // Create transactions
-  // Disbursement transaction
   await Transaction.create({
     transactionId: `TXN-${Date.now()}`,
     user: loan.user,
@@ -894,7 +660,6 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
     },
   });
 
-  // Processing fee transaction
   await Transaction.create({
     transactionId: `TXN-${Date.now()}-fee`,
     user: loan.user,
@@ -909,9 +674,8 @@ const updateFundForDisbursement = async (loan, performedBy, netDisbursed) => {
   return fund;
 };
 
-// ✅ NEW: Helper function to credit user wallet
+// Helper function to credit user wallet
 const creditUserWallet = async (loan, netDisbursed, performedBy) => {
-  // Idempotent: skip if wallet already credited for this loan
   const existingCredit = await Transaction.findOne({
     loan: loan._id,
     type: 'loan_disbursement',
@@ -929,7 +693,6 @@ const creditUserWallet = async (loan, netDisbursed, performedBy) => {
   user.walletBalance = balanceBefore + netDisbursed;
   await user.save();
 
-  // Create wallet transaction
   await Transaction.create({
     transactionId: `WALLET-${Date.now()}`,
     user: loan.user,
@@ -949,7 +712,6 @@ const creditUserWallet = async (loan, netDisbursed, performedBy) => {
     },
   });
 
-  // Create notification for wallet credit
   await createNotification({
     user: loan.user,
     title: 'Wallet Credited',
@@ -961,18 +723,20 @@ const creditUserWallet = async (loan, netDisbursed, performedBy) => {
   return user;
 };
 
-// Helper function to generate EMIs (flat + reducing_balance)
+// Helper function to generate EMIs (flat + reducing_balance) — repairs wrong schedules
 const generateEMIs = async (loan) => {
-  const existing = await EMI.countDocuments({ loan: loan._id, isDeleted: { $ne: true } });
-  if (existing > 0) return; // idempotent — do not create duplicate EMI rows
-
   const plan = calculateLoanPlan({
     principal: loan.amount,
     annualRate: loan.interestRate,
     tenureMonths: loan.tenure,
     interestType: loan.interestType || 'reducing_balance',
+    ratePeriod: loan.interestType === 'flat' ? 'monthly' : (loan.interestRatePeriod || 'yearly'),
+    netDisbursed: loan.netDisbursedAmount ?? loan.amount,
     startDate: loan.disbursedAt || loan.approvedAt || new Date(),
   });
+
+  // Delete any existing EMIs before inserting fresh schedule
+  await EMI.deleteMany({ loan: loan._id });
 
   const emis = plan.schedule.map((row, idx) => ({
     loan: loan._id,
@@ -988,7 +752,7 @@ const generateEMIs = async (loan) => {
     paidAmount: 0,
     pendingAmount: Math.round(row.amount * 100) / 100,
   }));
-  
+
   if (emis.length > 0) {
     await EMI.insertMany(emis);
   }
