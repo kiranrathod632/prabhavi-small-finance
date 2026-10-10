@@ -2,9 +2,7 @@ import { createOtp, verifyOtp } from '../services/otpService.js';
 import { sendOtpSms } from '../services/smsService.js';
 import { asyncHandler, sendResponse, sendError } from '../utils/apiResponse.js';
 
-/**
- * @route   POST /api/otp/send
- */
+
 export const sendOtp = asyncHandler(async (req, res) => {
   const { mobile, purpose = 'registration' } = req.body;
 
@@ -35,9 +33,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * @route   POST /api/otp/verify
- */
+
 export const verifyOtpCode = asyncHandler(async (req, res) => {
   const { mobile, otp, purpose = 'registration' } = req.body;
 
@@ -49,9 +45,7 @@ export const verifyOtpCode = asyncHandler(async (req, res) => {
   sendResponse(res, 200, 'OTP verified successfully', { mobile, verified: true });
 });
 
-/**
- * @route   POST /api/otp/resend
- */
+
 export const resendOtp = asyncHandler(async (req, res) => {
   const { mobile, purpose = 'registration' } = req.body;
 

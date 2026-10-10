@@ -1,4 +1,4 @@
-// server.js (Final version)
+// server.js — Render + Vercel + Local compatible
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -31,14 +31,14 @@ const allowedOrigins = (() => {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  
+
   const fallbackOrigins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "https://prabhavi-small-finance-app.vercel.app",
     "https://prabhavi-small-finance.vercel.app"
   ];
-  
+
   const combined = [...envOrigins, ...fallbackOrigins];
   return [...new Set(combined)];
 })();
@@ -75,19 +75,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoints
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Finance Loan API is running', 
+  res.json({
+    success: true,
+    message: 'Finance Loan API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Finance Loan API is running', 
-    timestamp: new Date().toISOString() 
+  res.json({
+    success: true,
+    message: 'Finance Loan API is running',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -106,31 +106,42 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
-// ✅ MOUNT ROUTES UNDER /api
+// Mount routes under /api
 app.use('/api', routes);
 
 // Error handling
 app.use(notFound);
 app.use(errorHandler);
 
-// ✅ EXPORT for Vercel
+// ✅ EXPORT for Vercel (serverless)
 export default app;
 
-// ✅ Local development server
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// ✅ START SERVER — for Render and Local
+// Vercel mein serverless hota hai, app.listen() skip karo
+if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 8000;
+
   const startServer = async () => {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-      
-      if (process.env.NODE_ENV !== 'test') {
-        setInterval(async () => {
-          try { await applyOverduePenalties(); } catch (e) { console.error('Penalty job:', e.message); }
-        }, 60 * 60 * 1000);
-        startSmsCronJobs();
-      }
-    });
+    try {
+      await connectDB();
+      console.log('✅ MongoDB connected');
+
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+
+        // Background jobs
+        if (process.env.NODE_ENV !== 'test') {
+          setInterval(async () => {
+            try { await applyOverduePenalties(); } catch (e) { console.error('Penalty job:', e.message); }
+          }, 60 * 60 * 1000);
+          startSmsCronJobs();
+        }
+      });
+    } catch (err) {
+      console.error('❌ Failed to start server:', err);
+      process.exit(1);
+    }
   };
+
   startServer();
 }
